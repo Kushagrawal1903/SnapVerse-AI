@@ -26,6 +26,8 @@ export default function TimelineClip({ clip, trackId }) {
   
   const [snapIndicator, setSnapIndicator] = useState(null);
   const [isRippling, setIsRippling] = useState(false);
+  const [hoverTime, setHoverTime] = useState(null);
+  const [hoverX, setHoverX] = useState(null);
 
   const isSelected = selectedClipIds.has(clip.id);
   const left = clip.startTime * timelineZoom;
@@ -248,6 +250,21 @@ export default function TimelineClip({ clip, trackId }) {
   const media = mediaItems.find(m => m.id === clip.mediaId);
   const showThumb = (clip.type === 'video' || clip.type === 'photo') && media?.thumbnail;
 
+  const handleHoverMove = useCallback((e) => {
+    if (e.buttons > 0) {
+      setHoverTime(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    setHoverX(x);
+    setHoverTime(clip.startTime + (x / timelineZoom));
+  }, [clip.startTime, timelineZoom]);
+
+  const handleHoverLeave = useCallback(() => {
+    setHoverTime(null);
+  }, []);
+
   return (
     <>
       <div
@@ -255,6 +272,8 @@ export default function TimelineClip({ clip, trackId }) {
         style={{ left, width, position: 'absolute' }}
         onMouseDown={handleMouseDown}
         onContextMenu={handleContextMenu}
+        onMouseMove={handleHoverMove}
+        onMouseLeave={handleHoverLeave}
         title={`${clip.name} (${clip.duration.toFixed(1)}s)`}
       >
         {/* Left trim handle */}
@@ -296,6 +315,51 @@ export default function TimelineClip({ clip, trackId }) {
 
         {/* Right trim handle */}
         <div className="trim-handle right" onMouseDown={(e) => handleTrimMouseDown('right', e)} onDoubleClick={(e) => handleTrimDoubleClick('right', e)} />
+        
+        {/* Hover Scrub Preview */}
+        {hoverTime !== null && hoverX !== null && media && (clip.type === 'video' || clip.type === 'photo') && (
+          <div style={{
+            position: 'absolute',
+            left: hoverX,
+            bottom: '100%',
+            marginBottom: 8,
+            transform: 'translateX(-50%)',
+            width: 120, height: 68,
+            background: '#000',
+            borderRadius: 4,
+            border: '1px solid var(--color-border-strong)',
+            overflow: 'hidden',
+            zIndex: 100,
+            pointerEvents: 'none',
+            boxShadow: 'var(--shadow-elevated)'
+          }}>
+            {clip.type === 'photo' ? (
+              <img src={media.objectUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+            ) : (
+              <video 
+                src={media.objectUrl}
+                muted
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                ref={el => {
+                  if (el) {
+                    const target = (hoverTime - clip.startTime + (clip.trimIn || 0)) * (clip.speed || 1);
+                    if (Math.abs(el.currentTime - target) > 0.1) {
+                      el.currentTime = target;
+                    }
+                  }
+                }}
+              />
+            )}
+            <div style={{ position: 'absolute', bottom: 2, right: 4, color: 'white', fontSize: 9, textShadow: '0 1px 2px #000', fontWeight: 'bold' }}>
+              {hoverTime.toFixed(1)}s
+            </div>
+          </div>
+        )}
+        
+        {/* Hover Waveform Highlight */}
+        {hoverTime !== null && hoverX !== null && clip.type === 'audio' && (
+          <div style={{ position: 'absolute', left: hoverX, top: 0, bottom: 0, width: 1, background: 'var(--color-text-primary)', pointerEvents: 'none', boxShadow: '0 0 4px var(--color-bg-primary)' }} />
+        )}
       </div>
 
       {snapIndicator !== null && (

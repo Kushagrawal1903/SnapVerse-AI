@@ -64,8 +64,11 @@ export default function usePlayback(canvasEngineRef) {
       return;
     }
 
-    // Start audio playback
-    audioManagerRef.current?.startPlayback(currentTime, tracks, mediaItems);
+    // Start audio playback (only if forward normal speed)
+    const store = useProjectStore.getState();
+    if (store.shuttleSpeed === 1) {
+      audioManagerRef.current?.startPlayback(currentTime, tracks, mediaItems);
+    }
 
     // Start video playback
     canvasEngineRef.current?.playVideos(currentTime, tracks);
@@ -73,13 +76,25 @@ export default function usePlayback(canvasEngineRef) {
     lastTimeRef.current = performance.now();
 
     const tick = (now) => {
-      const delta = (now - lastTimeRef.current) / 1000;
-      lastTimeRef.current = now;
       const state = useProjectStore.getState();
-      const newTime = state.currentTime + delta;
+      const delta = ((now - lastTimeRef.current) / 1000) * (state.shuttleSpeed || 1);
+      lastTimeRef.current = now;
+      let newTime = state.currentTime + delta;
       
-      if (newTime >= state.duration) {
+      if (state.isLooping && state.loopOut !== null && newTime >= state.loopOut) {
+        newTime = state.loopIn !== null ? state.loopIn : 0;
+      } else if (state.isLooping && state.loopIn !== null && newTime < state.loopIn && state.shuttleSpeed < 0) {
+        newTime = state.loopOut !== null ? state.loopOut : state.duration;
+      } else if (newTime >= state.duration) {
+        if (state.shuttleSpeed > 0) {
+          setIsPlaying(false);
+          useProjectStore.getState().setShuttleSpeed(1);
+          setCurrentTime(0);
+          return;
+        }
+      } else if (newTime <= 0 && state.shuttleSpeed < 0) {
         setIsPlaying(false);
+        useProjectStore.getState().setShuttleSpeed(1);
         setCurrentTime(0);
         return;
       }

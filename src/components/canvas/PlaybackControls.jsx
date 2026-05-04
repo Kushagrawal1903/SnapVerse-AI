@@ -12,6 +12,16 @@ export default function PlaybackControls() {
   const setVolume = useProjectStore(s => s.setVolume);
   const isMuted = useProjectStore(s => s.isMuted);
   const toggleMute = useProjectStore(s => s.toggleMute);
+  const shuttleSpeed = useProjectStore(s => s.shuttleSpeed);
+  const isLooping = useProjectStore(s => s.isLooping);
+  const toggleLoop = useProjectStore(s => s.toggleLoop);
+
+  const formatSpeed = (speed) => {
+    if (speed === 1) return '';
+    if (speed > 0 && speed < 1) return '½×';
+    if (speed < 0) return `${Math.abs(speed)}×↓`;
+    return `${speed}×`;
+  };
 
   return (
     <div className="playback-bar">
@@ -42,6 +52,23 @@ export default function PlaybackControls() {
       {/* Forward 5s */}
       <button className="btn-icon" onClick={() => setCurrentTime(currentTime + 5)} title="Forward 5s">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+      </button>
+
+      {/* Shuttle Speed */}
+      {shuttleSpeed !== 1 && (
+        <span style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-accent-primary)', marginLeft: 8, width: 24 }}>
+          {formatSpeed(shuttleSpeed)}
+        </span>
+      )}
+
+      {/* Loop Toggle */}
+      <button 
+        className={`btn-icon ${isLooping ? 'active' : ''}`} 
+        onClick={toggleLoop} 
+        title="Toggle Loop (\)"
+        style={{ color: isLooping ? 'var(--color-accent-primary)' : 'inherit' }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
       </button>
 
       {/* Timecode */}

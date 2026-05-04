@@ -30,6 +30,10 @@ const useProjectStore = create((set, get) => ({
   duration: 30,
   volume: 1,
   isMuted: false,
+  shuttleSpeed: 1,
+  loopIn: null,
+  loopOut: null,
+  isLooping: false,
   
   // History
   history: [],
@@ -46,6 +50,12 @@ const useProjectStore = create((set, get) => ({
   togglePlay: () => set(s => ({ isPlaying: !s.isPlaying })),
   setVolume: (v) => set({ volume: v }),
   toggleMute: () => set(s => ({ isMuted: !s.isMuted })),
+  setShuttleSpeed: (speed) => set({ shuttleSpeed: speed }),
+  setLoopIn: (time) => set({ loopIn: time }),
+  setLoopOut: (time) => set({ loopOut: time }),
+  toggleLoop: () => set(s => ({ isLooping: !s.isLooping })),
+  clearLoop: () => set({ loopIn: null, loopOut: null, isLooping: false }),
+  seekBy: (delta) => set(s => ({ currentTime: Math.max(0, Math.min(s.currentTime + delta, s.duration)) })),
   
   // History
   pushHistory: () => {

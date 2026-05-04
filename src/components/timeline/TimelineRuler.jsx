@@ -4,6 +4,8 @@ import useUIStore from '../../stores/useUIStore';
 
 export default function TimelineRuler({ containerRef }) {
   const duration = useProjectStore(s => s.duration);
+  const loopIn = useProjectStore(s => s.loopIn);
+  const loopOut = useProjectStore(s => s.loopOut);
   const timelineZoom = useUIStore(s => s.timelineZoom);
   const setCurrentTime = useProjectStore(s => s.setCurrentTime);
 
@@ -59,6 +61,33 @@ export default function TimelineRuler({ containerRef }) {
       style={{ cursor: 'pointer', userSelect: 'none' }}
     >
       {ticks}
+      
+      {/* Loop Region Overlay */}
+      {loopIn !== null && loopOut !== null && loopOut > loopIn && (
+        <div style={{
+          position: 'absolute',
+          left: 100 + loopIn * timelineZoom,
+          top: 0,
+          width: (loopOut - loopIn) * timelineZoom,
+          height: '100%',
+          background: 'rgba(255, 255, 255, 0.08)',
+          pointerEvents: 'none'
+        }} />
+      )}
+      
+      {/* Loop In Marker */}
+      {loopIn !== null && (
+        <div style={{ position: 'absolute', left: 100 + loopIn * timelineZoom, top: 0, height: '100%', width: 2, background: 'var(--color-success)', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, borderTop: '10px solid var(--color-success)', borderRight: '10px solid transparent' }} />
+        </div>
+      )}
+      
+      {/* Loop Out Marker */}
+      {loopOut !== null && (
+        <div style={{ position: 'absolute', left: 100 + loopOut * timelineZoom - 2, top: 0, height: '100%', width: 2, background: 'var(--color-danger)', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: 0, right: 0, borderTop: '10px solid var(--color-danger)', borderLeft: '10px solid transparent' }} />
+        </div>
+      )}
     </div>
   );
 }

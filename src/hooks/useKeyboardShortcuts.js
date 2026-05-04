@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import useProjectStore from '../stores/useProjectStore';
 import useUIStore from '../stores/useUIStore';
 
 export default function useKeyboardShortcuts() {
+  const shuttleState = useRef({ speed: 0 });
+
   useEffect(() => {
     const handler = (e) => {
       const tag = e.target.tagName;
@@ -16,16 +18,14 @@ export default function useKeyboardShortcuts() {
 
         case 'ArrowLeft':
           e.preventDefault();
-          useProjectStore.getState().setCurrentTime(
-            useProjectStore.getState().currentTime - 5
-          );
+          if (e.shiftKey) useProjectStore.getState().seekBy(-1);
+          else useProjectStore.getState().seekBy(-1 / 30);
           break;
 
         case 'ArrowRight':
           e.preventDefault();
-          useProjectStore.getState().setCurrentTime(
-            useProjectStore.getState().currentTime + 5
-          );
+          if (e.shiftKey) useProjectStore.getState().seekBy(1);
+          else useProjectStore.getState().seekBy(1 / 30);
           break;
 
         case 'Home':
@@ -38,6 +38,53 @@ export default function useKeyboardShortcuts() {
           useProjectStore.getState().setCurrentTime(
             useProjectStore.getState().duration
           );
+          break;
+
+        case 'l':
+        case 'L':
+          if (!e.ctrlKey && !e.metaKey) {
+            const store = useProjectStore.getState();
+            if (shuttleState.current.speed <= 0) shuttleState.current.speed = 1;
+            else shuttleState.current.speed = Math.min(shuttleState.current.speed * 2, 16);
+            store.setShuttleSpeed(shuttleState.current.speed);
+            if (!store.isPlaying) store.setIsPlaying(true);
+          }
+          break;
+
+        case 'j':
+        case 'J':
+          if (!e.ctrlKey && !e.metaKey) {
+            const store = useProjectStore.getState();
+            if (shuttleState.current.speed >= 0) shuttleState.current.speed = -1;
+            else shuttleState.current.speed = Math.max(shuttleState.current.speed * 2, -16);
+            store.setShuttleSpeed(shuttleState.current.speed);
+            if (!store.isPlaying) store.setIsPlaying(true);
+          }
+          break;
+
+        case 'k':
+        case 'K':
+          if (!e.ctrlKey && !e.metaKey) {
+            shuttleState.current.speed = 0;
+            useProjectStore.getState().setShuttleSpeed(1);
+            useProjectStore.getState().setIsPlaying(false);
+          }
+          break;
+
+        case 'i':
+        case 'I':
+          if (e.altKey) useProjectStore.getState().clearLoop();
+          else useProjectStore.getState().setLoopIn(useProjectStore.getState().currentTime);
+          break;
+
+        case 'o':
+        case 'O':
+          if (e.altKey) useProjectStore.getState().clearLoop();
+          else useProjectStore.getState().setLoopOut(useProjectStore.getState().currentTime);
+          break;
+
+        case '\\':
+          useProjectStore.getState().toggleLoop();
           break;
 
         case 's':
