@@ -24,10 +24,14 @@ const useUIStore = create((set) => ({
   
   // Panels
   activeLeftTab: 'media', // 'media' | 'effects' | 'text' | 'audio'
+  rightPanelTab: 'ai', // 'properties' | 'ai'
   showExportModal: false,
   showShortcutsModal: false,
   showApiKeyModal: false,
   showPreviewModal: null, // mediaId or null
+  
+  // Smart drag-drop state
+  isDraggingMedia: null, // { type: 'video'|'audio'|'photo' } or null
   
   // Context menu
   contextMenu: null, // { x, y, items, data }
@@ -37,10 +41,12 @@ const useUIStore = create((set) => ({
   showClipProperties: false,
   showFilters: false,
   showAdjustments: false,
+  hoveredFilter: null,
   speedCurveClipId: null,
   canvasMode: 'select', // 'select' | 'crop'
   keyframedProperty: null, // e.g. 'scaleX', 'opacity'
   saveStatus: 'idle', // 'idle' | 'saving' | 'saved'
+  lastSavedTime: null,
 
   // Actions
   selectClip: (clipId, { shift = false, ctrl = false } = {}) => set((s) => {
@@ -59,7 +65,7 @@ const useUIStore = create((set) => ({
       newSelection.clear();
       newSelection.add(clipId);
     }
-    return { selectedClipIds: newSelection, showClipProperties: newSelection.size > 0 };
+    return { selectedClipIds: newSelection, showClipProperties: newSelection.size > 0, rightPanelTab: newSelection.size > 0 ? 'properties' : s.rightPanelTab };
   }),
   clearSelection: () => set({ selectedClipIds: new Set(), showClipProperties: false }),
   setClipboardClips: (clips) => set({ clipboardClips: clips }),
@@ -77,7 +83,9 @@ const useUIStore = create((set) => ({
   setSnapGuides: (guides) => set(s => ({ snapGuides: { ...s.snapGuides, ...guides } })),
   
   setActiveLeftTab: (tab) => set({ activeLeftTab: tab }),
+  setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
   setShowExportModal: (v) => set({ showExportModal: v }),
+  setIsDraggingMedia: (media) => set({ isDraggingMedia: media }),
   setShowShortcutsModal: (v) => set({ showShortcutsModal: v }),
   setShowApiKeyModal: (v) => set({ showApiKeyModal: v }),
   setShowPreviewModal: (id) => set({ showPreviewModal: id }),
@@ -88,6 +96,7 @@ const useUIStore = create((set) => ({
   setEditingTextClipId: (id) => set({ editingTextClipId: id }),
   setShowFilters: (v) => set({ showFilters: v }),
   setShowAdjustments: (v) => set({ showAdjustments: v }),
+  setHoveredFilter: (id) => set({ hoveredFilter: id }),
   setSpeedCurveClipId: (id) => set({ speedCurveClipId: id }),
   setCanvasMode: (mode) => set({ canvasMode: mode }),
   setKeyframedProperty: (prop) => set({ keyframedProperty: prop }),

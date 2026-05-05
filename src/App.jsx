@@ -1,56 +1,53 @@
 import React, { useEffect, useState } from 'react';
-import TopBar from './components/layout/TopBar';
-import EditorLayout from './components/layout/EditorLayout';
-import TimelinePanel from './components/timeline/TimelinePanel';
-import FiltersPanel from './components/effects/FiltersPanel';
-import AdjustmentsPanel from './components/effects/AdjustmentsPanel';
-import TextEditor from './components/text/TextEditor';
-import AudioControls from './components/audio/AudioControls';
+import AppLayout from './components/layout/AppLayout';
 import ExportModal from './components/export/ExportModal';
 import KeyboardShortcutsModal from './components/shared/KeyboardShortcutsModal';
 import ContextMenu from './components/shared/ContextMenu';
+import ToastContainer from './components/shared/ToastContainer';
+import ContextualTip from './components/ui/ContextualTip';
 import AuthModal from './components/auth/AuthModal';
-import ClipPropertiesPanel from './components/timeline/ClipPropertiesPanel';
-import SpeedCurvePanel from './components/timeline/SpeedCurvePanel';
 import ReelAnalyzer from './components/ai/ReelAnalyzer';
 import ViralBreakdown from './components/ai/ViralBreakdown';
+import TopBar from './components/layout/TopBar';
 import useUIStore from './stores/useUIStore';
 import useProjectStore from './stores/useProjectStore';
 import useAuthStore from './stores/useAuthStore';
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts';
 import useAutoSave from './hooks/useAutoSave';
-import { loadProject } from './services/storageService';
+import { loadProject, restoreMediaBlobs } from './services/storageService';
+import { showToast } from './stores/useToastStore';
 import { isSupabaseConfigured } from './lib/supabase';
 import { supabase } from './lib/supabase';
 
 export default function App() {
   const showExportModal = useUIStore(s => s.showExportModal);
   const showShortcutsModal = useUIStore(s => s.showShortcutsModal);
-  const showFilters = useUIStore(s => s.showFilters);
-  const showAdjustments = useUIStore(s => s.showAdjustments);
-  const selectedClipIds = useUIStore(s => s.selectedClipIds);
   const currentView = useUIStore(s => s.currentView);
-  const tracks = useProjectStore(s => s.tracks);
 
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const isLoading = useAuthStore(s => s.isLoading);
   const user = useAuthStore(s => s.user);
   const initialize = useAuthStore(s => s.initialize);
 
-  // Get selected clip (if only 1 is selected) for legacy panels
-  let selectedClip = null;
-  if (selectedClipIds.size === 1) {
-    const id = Array.from(selectedClipIds)[0];
-    tracks.forEach(t => t.clips.forEach(c => {
-      if (c.id === id) selectedClip = c;
-    }));
-  }
-
   // Keyboard shortcuts
   useKeyboardShortcuts();
   
   // Auto-save
   useAutoSave();
+
+  // Prevent accidental data loss — beforeunload
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      const state = useProjectStore.getState();
+      const hasContent = state.tracks.some(t => t.clips.length > 0) || state.mediaItems.length > 0;
+      if (hasContent) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   // Initialize auth on mount
   useEffect(() => {
@@ -137,6 +134,13 @@ export default function App() {
       // Fallback: load from IndexedDB
       const data = await loadProject();
       if (data) {
+        if (data.mediaItems?.length > 0) {
+          data.mediaItems = await restoreMediaBlobs(data.mediaItems);
+          const offlineCount = data.mediaItems.filter(m => m.isOffline).length;
+          if (offlineCount > 0) {
+            showToast(`${offlineCount} media item(s) offline. Please re-upload.`, 'warning', 5000);
+          }
+        }
         useProjectStore.getState().loadProject(data);
       }
       useProjectStore.getState().pushHistory();
@@ -168,29 +172,21 @@ export default function App() {
   }
 
   return (
-    <div className="app-layout">
-      <TopBar />
-      
-      {currentView === 'editor' && (
-        <>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}>
-            <EditorLayout />
-            
-            {/* Floating panels */}
-            {showFilters && <FiltersPanel />}
-            {showAdjustments && <AdjustmentsPanel />}
-            {selectedClip?.type === 'text' && <TextEditor />}
-            {selectedClip?.type === 'audio' && <AudioControls />}
-            <ClipPropertiesPanel />
-            <SpeedCurvePanel />
-          </div>
+    <>
+      {currentView === 'editor' && <AppLayout />}
 
-          <TimelinePanel />
-        </>
+      {currentView === 'analyze' && (
+        <div className="app-layout">
+          <TopBar />
+          <ReelAnalyzer />
+        </div>
       )}
-
-      {currentView === 'analyze' && <ReelAnalyzer />}
-      {currentView === 'breakdown' && <ViralBreakdown />}
+      {currentView === 'breakdown' && (
+        <div className="app-layout">
+          <TopBar />
+          <ViralBreakdown />
+        </div>
+      )}
 
       {/* Modals */}
       {showExportModal && <ExportModal />}
@@ -198,6 +194,12 @@ export default function App() {
       
       {/* Context menu */}
       <ContextMenu />
-    </div>
+
+      {/* Contextual Tips */}
+      <ContextualTip />
+
+      {/* Toast notifications */}
+      <ToastContainer />
+    </>
   );
 }

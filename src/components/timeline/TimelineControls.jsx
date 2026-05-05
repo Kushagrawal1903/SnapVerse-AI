@@ -2,6 +2,20 @@ import React, { useState } from 'react';
 import useProjectStore from '../../stores/useProjectStore';
 import useUIStore from '../../stores/useUIStore';
 
+const ZOOM_LABELS = [
+  { max: 5, label: 'Overview' },
+  { max: 15, label: 'Normal' },
+  { max: 30, label: 'Detailed' },
+  { max: 60, label: 'Frame-level' },
+];
+
+function getZoomLabel(zoom) {
+  for (const z of ZOOM_LABELS) {
+    if (zoom <= z.max) return z.label;
+  }
+  return 'Frame-level';
+}
+
 export default function TimelineControls() {
   const timelineZoom = useUIStore(s => s.timelineZoom);
   const setTimelineZoom = useUIStore(s => s.setTimelineZoom);
@@ -18,6 +32,7 @@ export default function TimelineControls() {
   const closeAllGaps = useProjectStore(s => s.closeAllGaps);
   const currentTime = useProjectStore(s => s.currentTime);
   const tracks = useProjectStore(s => s.tracks);
+  const duration = useProjectStore(s => s.duration);
   const undo = useProjectStore(s => s.undo);
   const redo = useProjectStore(s => s.redo);
   const addTrack = useProjectStore(s => s.addTrack);
@@ -28,8 +43,6 @@ export default function TimelineControls() {
   const hasSelection = selectedClipIds.size > 0;
 
   const handleAddAdjustmentLayer = () => {
-    // Find the first track that accepts video or create one?
-    // Let's just use the first video track.
     const vTrack = tracks.find(t => t.accepts.includes('video') || t.accepts.includes('photo'));
     if (vTrack) {
       const id = addClip(vTrack.id, {
@@ -37,10 +50,20 @@ export default function TimelineControls() {
         name: 'Adjustment Layer',
         startTime: currentTime,
         duration: 5,
-        filter: 'none', // can be updated via adjustments panel
+        filter: 'none',
       });
       useUIStore.getState().selectClip(id);
       useUIStore.getState().setShowAdjustments(true);
+    }
+  };
+
+  const handleFitAll = () => {
+    // Calculate zoom level to fit all content
+    const container = document.querySelector('.timeline-track-content');
+    if (container && duration > 0) {
+      const containerWidth = container.clientWidth;
+      const targetZoom = Math.max(2, Math.min(60, containerWidth / duration));
+      setTimelineZoom(Math.round(targetZoom));
     }
   };
 
@@ -48,11 +71,13 @@ export default function TimelineControls() {
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 6,
-      padding: '6px 12px',
+      gap: 4,
+      padding: '4px 10px',
       borderBottom: '1px solid var(--color-border)',
       background: 'var(--color-bg-primary)',
       flexShrink: 0,
+      height: 36,
+      minHeight: 36,
     }}>
       {/* Undo / Redo */}
       <button className="btn-icon" onClick={undo} title="Undo (Ctrl+Z)">
@@ -193,8 +218,7 @@ export default function TimelineControls() {
         className="btn-primary tooltip" 
         data-tooltip="Auto-Enhance Project"
         onClick={() => {
-          const count = useProjectStore.getState().autoEnhanceProject();
-          alert(`Auto-enhanced applied ${count} improvements!`);
+          useProjectStore.getState().autoEnhanceProject();
         }}
         style={{ fontSize: 11, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--color-accent-primary)', marginRight: 12 }}
       >
@@ -203,15 +227,40 @@ export default function TimelineControls() {
       </button>
 
       {/* Zoom controls */}
-      <button className="btn-icon" onClick={() => setTimelineZoom(timelineZoom - 3)} title="Zoom Out">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-      </button>
-      <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)', minWidth: 32, textAlign: 'center' }}>
-        {timelineZoom}px/s
-      </span>
-      <button className="btn-icon" onClick={() => setTimelineZoom(timelineZoom + 3)} title="Zoom In">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <button className="btn-icon" onClick={() => setTimelineZoom(timelineZoom - 3)} title="Zoom Out (-)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+
+        <input
+          type="range"
+          min="2" max="60" step="1"
+          value={timelineZoom}
+          onChange={e => setTimelineZoom(parseInt(e.target.value))}
+          style={{ width: 72, height: 4, accentColor: 'var(--color-accent-primary)' }}
+          title={`${getZoomLabel(timelineZoom)} (${timelineZoom}px/s)`}
+        />
+
+        <button className="btn-icon" onClick={() => setTimelineZoom(timelineZoom + 3)} title="Zoom In (+)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+
+        <span style={{
+          fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)',
+          minWidth: 50, textAlign: 'center', fontWeight: 500,
+        }}>
+          {getZoomLabel(timelineZoom)}
+        </span>
+
+        <button
+          className="btn-icon"
+          onClick={handleFitAll}
+          title="Fit All"
+          style={{ fontSize: 9, fontWeight: 600, width: 'auto', padding: '2px 6px' }}
+        >
+          FIT
+        </button>
+      </div>
     </div>
   );
 }

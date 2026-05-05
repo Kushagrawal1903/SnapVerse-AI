@@ -2,6 +2,7 @@
 // Deploy with: supabase functions deploy ai-advisor
 // Set secret: supabase secrets set GEMMA_API_KEY=your_key
 
+// @ts-nocheck
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -50,7 +51,7 @@ serve(async (req) => {
       const prompt = `${SYSTEM_PROMPT}\n\nAnalyze this reel project and return ONLY a valid JSON array of 3-6 improvement suggestions:\n\nProject: ${JSON.stringify(projectSnapshot)}\n\nReturn format: [{"id":"unique","category":"Category","priority":"high|medium|low","title":"Short Title","suggestion":"2-3 sentence actionable tip"}]`;
 
       const gemmaResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent?key=${GEMMA_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${GEMMA_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -90,7 +91,7 @@ serve(async (req) => {
       });
 
       const gemmaResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:streamGenerateContent?alt=sse&key=${GEMMA_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:streamGenerateContent?alt=sse&key=${GEMMA_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -184,7 +185,7 @@ Return ONLY valid JSON:
       }
 
       const gemmaResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent?key=${GEMMA_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${GEMMA_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -251,7 +252,7 @@ Return JSON ONLY:
 }`;
 
       const gemmaResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent?key=${GEMMA_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${GEMMA_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

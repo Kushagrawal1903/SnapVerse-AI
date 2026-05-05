@@ -45,13 +45,19 @@ export default function MediaItem({ item }) {
       duration: item.duration,
     }));
     e.dataTransfer.effectAllowed = 'copy';
+    useUIStore.getState().setIsDraggingMedia({ type: item.type });
   }, [item]);
+
+  const handleDragEnd = useCallback(() => {
+    useUIStore.getState().setIsDraggingMedia(null);
+  }, []);
 
   return (
     <div
       className="media-item"
       draggable
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onDoubleClick={() => setShowPreviewModal(item.id)}
       onContextMenu={handleContextMenu}
       title={item.name}

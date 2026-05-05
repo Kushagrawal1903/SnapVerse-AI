@@ -5,6 +5,7 @@ import { getMediaType, generateId } from '../../utils/clipUtils';
 import { generateVideoThumbnail, generateImageThumbnail, generateAudioWaveform } from '../../services/thumbnailService';
 import { saveMediaBlob, uploadMediaToSupabase, uploadThumbnailToSupabase, insertMediaItem } from '../../services/storageService';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import { showToast } from '../../stores/useToastStore';
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
@@ -101,6 +102,9 @@ export default function MediaUploadZone() {
     }
     setIsProcessing(false);
     setProcessingStatus('');
+    if (files.length > 0) {
+      showToast(`${files.length} file${files.length > 1 ? 's' : ''} imported`, 'success', 2000);
+    }
   }, [processFile]);
 
   const handleDrop = useCallback((e) => {
@@ -123,6 +127,7 @@ export default function MediaUploadZone() {
         type="file"
         multiple
         accept=".mp4,.mov,.webm,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.aac,.ogg"
+        data-media-input
         onChange={(e) => handleFiles(Array.from(e.target.files))}
         style={{ display: 'none' }}
       />

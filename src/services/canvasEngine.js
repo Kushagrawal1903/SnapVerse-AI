@@ -70,7 +70,7 @@ export class CanvasEngine {
     return entry?.ready ? entry.element : null;
   }
 
-  renderFrame(currentTime, tracks, aspectRatio) {
+  renderFrame(currentTime, tracks, aspectRatio, hoveredFilter = null, selectedClipIds = new Set()) {
     const { ctx, canvas } = this;
     const ar = ASPECT_RATIOS[aspectRatio] || ASPECT_RATIOS['9:16'];
 
@@ -131,8 +131,9 @@ export class CanvasEngine {
         let filterParts = [];
 
         // Preset filter
-        if (clip.filter && clip.filter !== 'none') {
-          const filterDef = FILTERS.find(f => f.id === clip.filter);
+        const activeFilter = (hoveredFilter && selectedClipIds.has(clip.id)) ? hoveredFilter : clip.filter;
+        if (activeFilter && activeFilter !== 'none') {
+          const filterDef = FILTERS.find(f => f.id === activeFilter);
           if (filterDef && filterDef.css !== 'none') {
             filterParts.push(filterDef.css);
           }

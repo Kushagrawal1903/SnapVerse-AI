@@ -4,10 +4,10 @@ import useUIStore from '../../stores/useUIStore';
 import TimelineRuler from './TimelineRuler';
 import TimelineTrack from './TimelineTrack';
 import TimelineControls from './TimelineControls';
-import ClipPropertiesPanel from './ClipPropertiesPanel';
-import SpeedCurvePanel from './SpeedCurvePanel';
 import KeyframeTimeline from './KeyframeTimeline';
 import TimelineMiniMap from './TimelineMiniMap';
+
+const TRACK_HEADER_WIDTH = 120;
 
 export default function TimelinePanel() {
   const tracks = useProjectStore(s => s.tracks);
@@ -21,6 +21,7 @@ export default function TimelinePanel() {
   const selectClip = useUIStore(s => s.selectClip);
   const clearSelection = useUIStore(s => s.clearSelection);
   const containerRef = useRef(null);
+  const headerScrollRef = useRef(null);
   
   // Force re-render on scroll for minimap update
   const [, setScrollUpdate] = useState(0);
@@ -37,7 +38,7 @@ export default function TimelinePanel() {
   useEffect(() => {
     if (!isPlaying || !containerRef.current) return;
     const container = containerRef.current;
-    const playheadX = 100 + currentTime * timelineZoom;
+    const playheadX = currentTime * timelineZoom;
     const scrollLeft = container.scrollLeft;
     const viewWidth = container.clientWidth;
 
@@ -45,6 +46,13 @@ export default function TimelinePanel() {
       container.scrollLeft = playheadX - viewWidth / 2;
     }
   }, [currentTime, isPlaying, timelineZoom]);
+
+  // Sync vertical scroll between headers and content
+  const syncVerticalScroll = useCallback(() => {
+    if (containerRef.current && headerScrollRef.current) {
+      headerScrollRef.current.scrollTop = containerRef.current.scrollTop;
+    }
+  }, []);
 
   // Drag playhead
   const handlePlayheadDrag = useCallback((e) => {
@@ -56,7 +64,7 @@ export default function TimelinePanel() {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const scrollLeft = containerRef.current.scrollLeft;
-      const x = moveE.clientX - rect.left + scrollLeft - 100;
+      const x = moveE.clientX - rect.left + scrollLeft;
       const time = Math.max(0, Math.min(x / timelineZoom, duration));
       setCurrentTime(time);
     };
@@ -79,6 +87,7 @@ export default function TimelinePanel() {
       clearSelection();
     }
 
+    if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const startX = e.clientX - rect.left + containerRef.current.scrollLeft;
     const startY = e.clientY - rect.top + containerRef.current.scrollTop;
@@ -86,6 +95,7 @@ export default function TimelinePanel() {
     setRubberBand({ active: true, startX, startY, endX: startX, endY: startY });
 
     const handleMove = (moveE) => {
+      if (!containerRef.current) return;
       const currentX = moveE.clientX - rect.left + containerRef.current.scrollLeft;
       const currentY = moveE.clientY - rect.top + containerRef.current.scrollTop;
       setRubberBand({ endX: currentX, endY: currentY });
@@ -103,12 +113,11 @@ export default function TimelinePanel() {
         newSelection.clear();
       }
 
-      // We need to approximate clip bounds.
-      let trackY = 30; // Ruler
+      let trackY = 0;
       state.tracks.forEach(t => {
-        const tHeight = t.height || 80;
+        const tHeight = t.height || 64;
         t.clips.forEach(c => {
-          const cx1 = 100 + c.startTime * timelineZoom;
+          const cx1 = c.startTime * timelineZoom;
           const cx2 = cx1 + (c.duration - (c.trimIn||0) - (c.trimOut||0)) * timelineZoom;
           const cy1 = trackY;
           const cy2 = trackY + tHeight;
@@ -120,7 +129,7 @@ export default function TimelinePanel() {
             newSelection.delete(c.id);
           }
         });
-        trackY += tHeight + 12; // Height + padding/margin
+        trackY += tHeight;
       });
       
       useUIStore.setState({ selectedClipIds: newSelection, showClipProperties: newSelection.size > 0 });
@@ -141,6 +150,7 @@ export default function TimelinePanel() {
   }, []);
 
   const totalWidth = duration * timelineZoom + 200;
+  const playheadX = currentTime * timelineZoom;
 
   // Compute rubber band rect
   const rbStyle = rubberBand.active ? {
@@ -156,42 +166,114 @@ export default function TimelinePanel() {
   } : null;
 
   return (
-    <div className="timeline-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+    <div className="timeline-panel">
       <TimelineControls />
-      <div
-        ref={containerRef}
-        className="timeline-tracks-area"
-        onWheel={handleWheel}
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
-        onMouseDown={handleMouseDown}
-        onScroll={() => setScrollUpdate(Date.now())}
-        style={{ position: 'relative', overflow: 'auto', flex: 1 }}
-      >
-        <div style={{ minWidth: totalWidth, position: 'relative', minHeight: '100%' }}>
-          {rubberBand.active && <div style={rbStyle} />}
-          <TimelineRuler containerRef={containerRef} />
-          {tracks.map((track) => (
-            <TimelineTrack
-              key={track.id}
-              config={{
-                id: track.id,
-                icon: track.icon,
-                label: track.label,
-                accepts: track.accepts,
-              }}
-              track={track}
-            />
-          ))}
-          {/* Playhead */}
-          <div
-            className="playhead"
-            style={{ left: 100 + currentTime * timelineZoom }}
-            onMouseDown={handlePlayheadDrag}
-          />
+      
+      {/* Ruler row */}
+      <div style={{ display: 'flex', flexShrink: 0, height: 28 }}>
+        {/* Track header spacer for ruler */}
+        <div style={{
+          width: TRACK_HEADER_WIDTH,
+          flexShrink: 0,
+          background: 'var(--color-bg-primary)',
+          borderRight: '1px solid var(--color-border)',
+          borderBottom: '1px solid var(--color-border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <span style={{ fontSize: 9, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Tracks
+          </span>
         </div>
-        <KeyframeTimeline />
+        {/* Ruler — scrolls with content */}
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <div style={{
+            position: 'absolute', left: 0, top: 0, bottom: 0,
+            width: totalWidth,
+            transform: `translateX(-${containerRef.current?.scrollLeft || 0}px)`,
+          }}>
+            <TimelineRuler containerRef={containerRef} />
+          </div>
+        </div>
       </div>
+      
+      {/* Tracks area: headers (fixed) + clips (scrollable) */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+        {/* Track headers — fixed left, vertical scroll synced */}
+        <div
+          ref={headerScrollRef}
+          style={{
+            width: TRACK_HEADER_WIDTH,
+            flexShrink: 0,
+            overflowY: 'hidden',
+            overflowX: 'hidden',
+          }}
+        >
+          {tracks.map((track) => {
+            const trackHeight = track.height || 64;
+            return (
+              <TimelineTrack
+                key={track.id}
+                config={{
+                  id: track.id,
+                  icon: track.icon,
+                  label: track.label,
+                  accepts: track.accepts,
+                }}
+                track={track}
+                renderMode="header"
+                trackHeight={trackHeight}
+              />
+            );
+          })}
+        </div>
+
+        {/* Clips area — scrolls both axes */}
+        <div
+          ref={containerRef}
+          className="timeline-tracks-area"
+          onWheel={handleWheel}
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onMouseDown={handleMouseDown}
+          onScroll={() => {
+            setScrollUpdate(Date.now());
+            syncVerticalScroll();
+          }}
+          style={{ position: 'relative', overflow: 'auto', flex: 1 }}
+        >
+          <div style={{ minWidth: totalWidth, position: 'relative', minHeight: '100%' }}>
+            {rubberBand.active && <div style={rbStyle} />}
+            {tracks.map((track) => {
+              const trackHeight = track.height || 64;
+              return (
+                <TimelineTrack
+                  key={track.id}
+                  config={{
+                    id: track.id,
+                    icon: track.icon,
+                    label: track.label,
+                    accepts: track.accepts,
+                  }}
+                  track={track}
+                  renderMode="content"
+                  trackHeight={trackHeight}
+                />
+              );
+            })}
+            {/* Playhead */}
+            <div
+              className="playhead"
+              style={{ left: playheadX }}
+              onMouseDown={handlePlayheadDrag}
+            />
+          </div>
+          <KeyframeTimeline />
+        </div>
+      </div>
+
+      {/* MiniMap */}
       <div className="timeline-minimap-container">
         <TimelineMiniMap containerRef={containerRef} />
       </div>

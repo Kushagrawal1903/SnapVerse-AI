@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react';
 import useProjectStore from '../stores/useProjectStore';
+import useUIStore from '../stores/useUIStore';
 import { AudioPlaybackManager } from '../services/audioEngine';
 
 export default function usePlayback(canvasEngineRef) {
   const animRef = useRef(null);
   const lastTimeRef = useRef(0);
+  const lastUiUpdateRef = useRef(0);
   const audioManagerRef = useRef(null);
+  const currentTimeRef = useRef(0); // Holds internal high-precision time (Step 19)
 
   const isPlaying = useProjectStore(s => s.isPlaying);
   const currentTime = useProjectStore(s => s.currentTime);
@@ -17,6 +20,9 @@ export default function usePlayback(canvasEngineRef) {
   const mediaItems = useProjectStore(s => s.mediaItems);
   const volume = useProjectStore(s => s.volume);
   const isMuted = useProjectStore(s => s.isMuted);
+  
+  const hoveredFilter = useUIStore(s => s.hoveredFilter);
+  const selectedClipIds = useUIStore(s => s.selectedClipIds);
 
   // Initialize audio manager
   useEffect(() => {
@@ -46,6 +52,23 @@ export default function usePlayback(canvasEngineRef) {
     audioManagerRef.current?.setMasterVolume(volume, isMuted);
   }, [volume, isMuted]);
 
+  // Sync internal ref when seeking manually
+  useEffect(() => {
+    if (!isPlaying) {
+      currentTimeRef.current = currentTime;
+      if (canvasEngineRef.current) {
+        canvasEngineRef.current.renderFrame(currentTime, tracks, aspectRatio, hoveredFilter, selectedClipIds);
+      }
+    }
+  }, [currentTime, isPlaying]); // Intentionally omitting tracks/aspectRatio to avoid thrashing, we handle re-render below
+
+  // Immediate re-render for filter hover or track edits while paused
+  useEffect(() => {
+    if (!isPlaying && canvasEngineRef.current) {
+      canvasEngineRef.current.renderFrame(currentTime, tracks, aspectRatio, hoveredFilter, selectedClipIds);
+    }
+  }, [tracks, aspectRatio, hoveredFilter, selectedClipIds, isPlaying]);
+
   // Playback loop
   useEffect(() => {
     if (!isPlaying) {
@@ -56,30 +79,27 @@ export default function usePlayback(canvasEngineRef) {
 
       // Pause all videos
       canvasEngineRef.current?.pauseAllVideos();
-
-      // Render single frame at current time
-      if (canvasEngineRef.current) {
-        canvasEngineRef.current.renderFrame(currentTime, tracks, aspectRatio);
-      }
       return;
     }
 
     // Start audio playback (only if forward normal speed)
     const store = useProjectStore.getState();
     if (store.shuttleSpeed === 1) {
-      audioManagerRef.current?.startPlayback(currentTime, tracks, mediaItems);
+      audioManagerRef.current?.startPlayback(currentTimeRef.current, tracks, mediaItems);
     }
 
     // Start video playback
-    canvasEngineRef.current?.playVideos(currentTime, tracks);
+    canvasEngineRef.current?.playVideos(currentTimeRef.current, tracks);
 
     lastTimeRef.current = performance.now();
+    lastUiUpdateRef.current = performance.now();
 
     const tick = (now) => {
       const state = useProjectStore.getState();
       const delta = ((now - lastTimeRef.current) / 1000) * (state.shuttleSpeed || 1);
       lastTimeRef.current = now;
-      let newTime = state.currentTime + delta;
+      
+      let newTime = currentTimeRef.current + delta;
       
       if (state.isLooping && state.loopOut !== null && newTime >= state.loopOut) {
         newTime = state.loopIn !== null ? state.loopIn : 0;
@@ -99,13 +119,22 @@ export default function usePlayback(canvasEngineRef) {
         return;
       }
 
-      setCurrentTime(newTime);
+      currentTimeRef.current = newTime;
       
+      // Step 19: Only dispatch to Zustand ~10fps (every 100ms) to avoid React re-render thrashing
+      if (now - lastUiUpdateRef.current > 100) {
+        setCurrentTime(newTime);
+        lastUiUpdateRef.current = now;
+      }
+      
+      // But render to canvas at 60fps
       if (canvasEngineRef.current) {
         canvasEngineRef.current.renderFrame(
           newTime,
           state.tracks,
-          state.aspectRatio
+          state.aspectRatio,
+          useUIStore.getState().hoveredFilter,
+          useUIStore.getState().selectedClipIds
         );
       }
 
@@ -118,11 +147,4 @@ export default function usePlayback(canvasEngineRef) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
   }, [isPlaying]);
-
-  // Re-render when currentTime changes manually (seeking)
-  useEffect(() => {
-    if (!isPlaying && canvasEngineRef.current) {
-      canvasEngineRef.current.renderFrame(currentTime, tracks, aspectRatio);
-    }
-  }, [currentTime, tracks, aspectRatio]);
 }

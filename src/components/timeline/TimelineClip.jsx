@@ -3,6 +3,14 @@ import useProjectStore from '../../stores/useProjectStore';
 import useUIStore from '../../stores/useUIStore';
 import { encodeWAV } from '../../utils/audioEncoder';
 import { getAudioContext } from '../../services/audioEngine';
+import { showToast } from '../../stores/useToastStore';
+
+const quickBtnStyle = {
+  width: 22, height: 22, background: 'rgba(30,30,30,0.92)', border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 4, cursor: 'pointer', padding: 0, color: '#fff',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  backdropFilter: 'blur(4px)', boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+};
 
 export default function TimelineClip({ clip, trackId }) {
   const updateClip = useProjectStore(s => s.updateClip);
@@ -29,6 +37,7 @@ export default function TimelineClip({ clip, trackId }) {
   const [snapIndicator, setSnapIndicator] = useState(null);
   const [isRippling, setIsRippling] = useState(false);
   const [hoverTime, setHoverTime] = useState(null);
+  const [isHovered, setIsHovered] = useState(false);
   const [hoverX, setHoverX] = useState(null);
 
   const isSelected = selectedClipIds.has(clip.id);
@@ -352,152 +361,217 @@ export default function TimelineClip({ clip, trackId }) {
     setHoverTime(null);
   }, []);
 
+  const effectiveDuration = clip.duration - (clip.trimIn || 0) - (clip.trimOut || 0);
+
+  // Badges to show in the top bar
+  const badges = [];
+  if (clip.filter && clip.filter !== 'none') badges.push({ label: clip.filter.toUpperCase(), bg: 'rgba(91,79,245,0.2)', color: 'var(--color-clip-video-text)' });
+  if (clip.speed && clip.speed !== 1) badges.push({ label: `${clip.speed}x`, bg: 'rgba(255,107,53,0.2)', color: 'var(--color-accent-warm)' });
+  if (clip.reversed) badges.push({ label: 'REV', bg: 'rgba(226,75,74,0.2)', color: '#E24B4A' });
+  if (clip.audioDetached) badges.push({ label: '🔗', bg: 'transparent', color: 'inherit' });
+
   return (
     <>
       <div
         className={`timeline-clip ${typeClass} ${isSelected ? 'selected' : ''} ${isRippling ? 'rippling' : ''}`}
-        style={{ left, width, position: 'absolute' }}
+        style={{
+          left, width, position: 'absolute',
+          animation: clip._isNew ? 'clipScaleIn 0.25s ease-out' : 'none',
+          boxShadow: isHovered ? '0 2px 8px rgba(0,0,0,0.15)' : undefined,
+          transition: 'box-shadow 0.15s ease',
+          zIndex: isHovered || isSelected ? 5 : 1,
+        }}
         onMouseDown={handleMouseDown}
         onContextMenu={handleContextMenu}
-        onMouseMove={handleHoverMove}
-        onMouseLeave={handleHoverLeave}
-        title={`${clip.name} (${clip.duration.toFixed(1)}s)`}
+        onMouseMove={(e) => { setIsHovered(true); handleHoverMove(e); }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={(e) => { setIsHovered(false); handleHoverLeave(e); }}
+        title={`${clip.name} (${effectiveDuration.toFixed(1)}s)`}
       >
-        {/* Left trim handle */}
-        <div className="trim-handle left" onMouseDown={(e) => handleTrimMouseDown('left', e)} onDoubleClick={(e) => handleTrimDoubleClick('left', e)} />
+        {/* ─── TOP BAR: Name + Badges ─── */}
+        <div className="clip-topbar">
+          <span className="clip-topbar-name">
+            {clip.type === 'text' ? (clip.text || clip.name) : clip.name}
+          </span>
+          {badges.length > 0 && width > 80 && (
+            <div className="clip-topbar-badges">
+              {badges.map((b, i) => (
+                <span key={i} className="clip-badge" style={{ background: b.bg, color: b.color }}>{b.label}</span>
+              ))}
+            </div>
+          )}
+        </div>
 
-        {/* Thumbnail strip for video/photo */}
-        {showThumb && (
-          <div style={{
-            position: 'absolute', inset: 0, opacity: 0.3, overflow: 'hidden',
-            borderRadius: 'inherit', pointerEvents: 'none',
-          }}>
-            <img src={media.thumbnail} alt="" style={{
-              width: '100%', height: '100%', objectFit: 'cover',
-            }} />
-          </div>
-        )}
+        {/* ─── CONTENT AREA ─── */}
+        <div className="clip-content">
+          {/* Thumbnail strip for video/photo */}
+          {showThumb && (
+            <div style={{
+              position: 'absolute', inset: 0, opacity: 0.25, overflow: 'hidden',
+              borderRadius: 'inherit', pointerEvents: 'none',
+            }}>
+              <img src={media.thumbnail} alt="" style={{
+                width: '100%', height: '100%', objectFit: 'cover',
+              }} />
+            </div>
+          )}
 
-        {/* Waveform for audio clips */}
-        {clip.type === 'audio' && (
-          <canvas
-            ref={waveCanvasRef}
-            width={Math.max(20, width)}
-            height={30}
-            style={{
-              position: 'absolute', inset: 0, width: '100%', height: '100%',
-              pointerEvents: 'none', borderRadius: 'inherit',
-            }}
-          />
-        )}
-        
-        {/* Beat Markers */}
-        {clip.beats && clip.type === 'audio' && (
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-            {clip.beats.map((beatTime, i) => {
-              const effectiveTime = beatTime - (clip.trimIn || 0);
-              if (effectiveTime < 0 || effectiveTime > (clip.duration - (clip.trimIn||0) - (clip.trimOut||0))) return null;
-              return (
-                <div key={i} style={{
-                  position: 'absolute',
-                  left: effectiveTime * timelineZoom,
-                  top: 0, bottom: 0,
-                  width: 1,
-                  background: 'rgba(255, 255, 255, 0.4)',
-                  borderLeft: '1px solid var(--color-accent-primary)',
-                }} />
-              );
-            })}
-          </div>
-        )}
-        
-        {/* Volume Automation Overlay */}
-        {clip.volumeAutomation && (
-          <div
-            style={{ position: 'absolute', inset: 0, zIndex: 10, cursor: 'crosshair' }}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              const rect = e.currentTarget.getBoundingClientRect();
-              const time = (e.clientX - rect.left) / timelineZoom;
-              const volume = Math.max(0, Math.min(200, ((rect.height - (e.clientY - rect.top)) / rect.height) * 200));
-              
-              const currentKfs = clip.volumeKeyframes || [
-                { time: 0, volume: clip.volume ?? 100 },
-                { time: clip.duration - (clip.trimIn||0) - (clip.trimOut||0), volume: clip.volume ?? 100 }
-              ];
-              const newKfs = [...currentKfs, { time, volume }].sort((a,b) => a.time - b.time);
-              updateClip(trackId, clip.id, { volumeKeyframes: newKfs });
-            }}
-          >
-            <svg width="100%" height="100%" style={{ overflow: 'visible', pointerEvents: 'none' }}>
-              {(clip.volumeKeyframes || [
-                { time: 0, volume: clip.volume ?? 100 },
-                { time: clip.duration - (clip.trimIn||0) - (clip.trimOut||0), volume: clip.volume ?? 100 }
-              ]).map((kf, i, arr) => {
-                const x = kf.time * timelineZoom;
-                const y = `calc(100% - ${kf.volume / 2}%)`;
-                
-                const next = arr[i + 1];
+          {/* Waveform for audio clips */}
+          {clip.type === 'audio' && (
+            <canvas
+              ref={waveCanvasRef}
+              width={Math.max(20, width)}
+              height={30}
+              style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                pointerEvents: 'none', borderRadius: 'inherit',
+              }}
+            />
+          )}
+          
+          {/* Beat Markers */}
+          {clip.beats && clip.type === 'audio' && (
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+              {clip.beats.map((beatTime, i) => {
+                const effectiveTime = beatTime - (clip.trimIn || 0);
+                if (effectiveTime < 0 || effectiveTime > effectiveDuration) return null;
                 return (
-                  <g key={i}>
-                    {next && (
-                      <line
-                        x1={x} y1={y}
-                        x2={next.time * timelineZoom} y2={`calc(100% - ${next.volume / 2}%)`}
-                        stroke="var(--color-accent-primary)" strokeWidth="2"
-                      />
-                    )}
-                    <circle
-                      cx={x} cy={y} r="4" fill="#fff" stroke="var(--color-accent-primary)" strokeWidth="2"
-                      style={{ pointerEvents: 'auto', cursor: 'ns-resize' }}
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        const startY = e.clientY;
-                        const startVol = kf.volume;
-                        const handleMove = (moveE) => {
-                          const dy = moveE.clientY - startY;
-                          const dVol = -(dy / e.currentTarget.ownerSVGElement.clientHeight) * 200;
-                          const newVol = Math.max(0, Math.min(200, startVol + dVol));
-                          const newKfs = [...arr];
-                          newKfs[i] = { ...kf, volume: newVol };
-                          updateClip(trackId, clip.id, { volumeKeyframes: newKfs });
-                        };
-                        const handleUp = () => {
-                          window.removeEventListener('pointermove', handleMove);
-                          window.removeEventListener('pointerup', handleUp);
-                        };
-                        window.addEventListener('pointermove', handleMove);
-                        window.addEventListener('pointerup', handleUp);
-                      }}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        if (i !== 0 && i !== arr.length - 1) {
-                          const newKfs = arr.filter((_, idx) => idx !== i);
-                          updateClip(trackId, clip.id, { volumeKeyframes: newKfs });
-                        }
-                      }}
-                    />
-                  </g>
+                  <div key={i} style={{
+                    position: 'absolute',
+                    left: effectiveTime * timelineZoom,
+                    top: 0, bottom: 0,
+                    width: 1,
+                    background: 'rgba(255, 255, 255, 0.4)',
+                    borderLeft: '1px solid var(--color-accent-primary)',
+                  }} />
                 );
               })}
-            </svg>
+            </div>
+          )}
+          
+          {/* Volume Automation Overlay */}
+          {clip.volumeAutomation && (
+            <div
+              style={{ position: 'absolute', inset: 0, zIndex: 10, cursor: 'crosshair' }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                const time = (e.clientX - rect.left) / timelineZoom;
+                const volume = Math.max(0, Math.min(200, ((rect.height - (e.clientY - rect.top)) / rect.height) * 200));
+                
+                const currentKfs = clip.volumeKeyframes || [
+                  { time: 0, volume: clip.volume ?? 100 },
+                  { time: effectiveDuration, volume: clip.volume ?? 100 }
+                ];
+                const newKfs = [...currentKfs, { time, volume }].sort((a,b) => a.time - b.time);
+                updateClip(trackId, clip.id, { volumeKeyframes: newKfs });
+              }}
+            >
+              <svg width="100%" height="100%" style={{ overflow: 'visible', pointerEvents: 'none' }}>
+                {(clip.volumeKeyframes || [
+                  { time: 0, volume: clip.volume ?? 100 },
+                  { time: effectiveDuration, volume: clip.volume ?? 100 }
+                ]).map((kf, i, arr) => {
+                  const x = kf.time * timelineZoom;
+                  const y = `calc(100% - ${kf.volume / 2}%)`;
+                  
+                  const next = arr[i + 1];
+                  return (
+                    <g key={i}>
+                      {next && (
+                        <line
+                          x1={x} y1={y}
+                          x2={next.time * timelineZoom} y2={`calc(100% - ${next.volume / 2}%)`}
+                          stroke="var(--color-accent-primary)" strokeWidth="2"
+                        />
+                      )}
+                      <circle
+                        cx={x} cy={y} r="4" fill="#fff" stroke="var(--color-accent-primary)" strokeWidth="2"
+                        style={{ pointerEvents: 'auto', cursor: 'ns-resize' }}
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          const startY = e.clientY;
+                          const startVol = kf.volume;
+                          const handleMove = (moveE) => {
+                            const dy = moveE.clientY - startY;
+                            const dVol = -(dy / e.currentTarget.ownerSVGElement.clientHeight) * 200;
+                            const newVol = Math.max(0, Math.min(200, startVol + dVol));
+                            const newKfs = [...arr];
+                            newKfs[i] = { ...kf, volume: newVol };
+                            updateClip(trackId, clip.id, { volumeKeyframes: newKfs });
+                          };
+                          const handleUp = () => {
+                            window.removeEventListener('pointermove', handleMove);
+                            window.removeEventListener('pointerup', handleUp);
+                          };
+                          window.addEventListener('pointermove', handleMove);
+                          window.addEventListener('pointerup', handleUp);
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          if (i !== 0 && i !== arr.length - 1) {
+                            const newKfs = arr.filter((_, idx) => idx !== i);
+                            updateClip(trackId, clip.id, { volumeKeyframes: newKfs });
+                          }
+                        }}
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+          )}
+
+          {/* Hover Waveform Highlight */}
+          {hoverTime !== null && hoverX !== null && clip.type === 'audio' && (
+            <div style={{ position: 'absolute', left: hoverX, top: 0, bottom: 0, width: 1, background: 'var(--color-text-primary)', pointerEvents: 'none', boxShadow: '0 0 4px var(--color-bg-primary)' }} />
+          )}
+        </div>
+
+        {/* ─── BOTTOM BAR: Duration ─── */}
+        {width > 45 && (
+          <div className="clip-bottombar">
+            {effectiveDuration.toFixed(1)}s
           </div>
         )}
 
-        {/* Clip label */}
-        <span style={{
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          flex: 1, pointerEvents: 'none', position: 'relative', zIndex: 1,
-          textShadow: showThumb ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
-          display: 'flex', alignItems: 'center', gap: 4
-        }}>
-          {clip.audioDetached && <span title="Audio Detached">🔗</span>}
-          {clip.reversed && <span style={{ background: 'var(--color-danger)', color: '#fff', fontSize: 8, padding: '1px 4px', borderRadius: 2, fontWeight: 'bold' }}>REV</span>}
-          {clip.type === 'text' ? (clip.text || clip.name) : clip.name}
-        </span>
+        {/* ─── TRIM HANDLES ─── */}
+        <div className="trim-handle left" onMouseDown={(e) => handleTrimMouseDown('left', e)} onDoubleClick={(e) => handleTrimDoubleClick('left', e)}>
+          <div className="trim-handle-bar" />
+        </div>
+        <div className="trim-handle right" onMouseDown={(e) => handleTrimMouseDown('right', e)} onDoubleClick={(e) => handleTrimDoubleClick('right', e)}>
+          <div className="trim-handle-bar" />
+        </div>
 
-        {/* Right trim handle */}
-        <div className="trim-handle right" onMouseDown={(e) => handleTrimMouseDown('right', e)} onDoubleClick={(e) => handleTrimDoubleClick('right', e)} />
+        {/* ─── HOVER QUICK-ACTION BUTTONS ─── */}
+        {isHovered && !isRippling && width > 60 && (
+          <div style={{
+            position: 'absolute', top: -26, right: 4, zIndex: 20,
+            display: 'flex', gap: 2, animation: 'fadeIn 0.12s ease-out',
+          }}>
+            <button
+              onMouseDown={(e) => { e.stopPropagation(); const tId = tracks.find(t => t.clips.some(c => c.id === clip.id))?.id; if (tId) splitClip(tId, clip.id, currentTime); }}
+              style={quickBtnStyle}
+              title="Split"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="2" x2="12" y2="22"/></svg>
+            </button>
+            <button
+              onMouseDown={(e) => { e.stopPropagation(); duplicateClips(new Set([clip.id])); }}
+              style={quickBtnStyle}
+              title="Duplicate"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <button
+              onMouseDown={(e) => { e.stopPropagation(); deleteClips(new Set([clip.id]), rippleEdit); useUIStore.getState().clearSelection(); }}
+              style={{ ...quickBtnStyle, color: '#E24B4A' }}
+              title="Delete"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        )}
         
         {/* Hover Scrub Preview */}
         {hoverTime !== null && hoverX !== null && media && (clip.type === 'video' || clip.type === 'photo') && (
@@ -505,7 +579,7 @@ export default function TimelineClip({ clip, trackId }) {
             position: 'absolute',
             left: hoverX,
             bottom: '100%',
-            marginBottom: 8,
+            marginBottom: 32,
             transform: 'translateX(-50%)',
             width: 120, height: 68,
             background: '#000',
@@ -514,7 +588,7 @@ export default function TimelineClip({ clip, trackId }) {
             overflow: 'hidden',
             zIndex: 100,
             pointerEvents: 'none',
-            boxShadow: 'var(--shadow-elevated)'
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           }}>
             {clip.type === 'photo' ? (
               <img src={media.objectUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
@@ -537,11 +611,6 @@ export default function TimelineClip({ clip, trackId }) {
               {hoverTime.toFixed(1)}s
             </div>
           </div>
-        )}
-        
-        {/* Hover Waveform Highlight */}
-        {hoverTime !== null && hoverX !== null && clip.type === 'audio' && (
-          <div style={{ position: 'absolute', left: hoverX, top: 0, bottom: 0, width: 1, background: 'var(--color-text-primary)', pointerEvents: 'none', boxShadow: '0 0 4px var(--color-bg-primary)' }} />
         )}
       </div>
 

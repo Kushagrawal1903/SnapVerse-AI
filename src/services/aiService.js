@@ -105,7 +105,7 @@ export async function* chatStream(message, history, projectSnapshot) {
     const contextMessage = `[Current project context: ${JSON.stringify(projectSnapshot)}]\n\nUser question: ${message}`;
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemma-3-4b-it' });
+    const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
 
     const chatSession = model.startChat({
       systemInstruction: SYSTEM_PROMPT,
@@ -139,7 +139,7 @@ async function callGemmaDirect(prompt) {
   try {
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemma-3-4b-it' });
+    const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     return parseJsonResponse(text);
@@ -177,7 +177,7 @@ export async function transcribeAudio(blob) {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
   // Audio transcription using gemma-3-4b-it (note: user requested full replacement, though audio support in standard SDK might fallback)
-  const model = genAI.getGenerativeModel({ model: 'gemma-3-4b-it' });
+  const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
 
   // Convert blob to base64
   const base64Data = await new Promise((resolve, reject) => {
@@ -252,12 +252,60 @@ export async function analyzeReel(urlOrName, frames) {
         }
       }
     } catch (e) {
-      console.warn('Edge function failed:', e);
-      throw e;
+      console.warn('Edge function failed, trying fallback:', e);
     }
-  } else {
-    throw new Error("Supabase is not configured. Please configure Supabase to use this feature.");
   }
+  
+  // Fallback: direct Gemma API with env var key
+  if (GEMMA_API_KEY) {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
+    
+    const parts = [
+      { text: `Analyze this short-form video reel (Title/URL: ${urlOrName}) and score it across these 6 dimensions.
+For each, give a score 0-100 and 2-3 specific, actionable improvements.
+Return ONLY valid JSON:
+{
+"overallScore": number,
+"scores": {
+"hook": { "score": number, "analysis": string, "fixes": string[] },
+"pacing": { "score": number, "analysis": string, "fixes": string[] },
+"audio": { "score": number, "analysis": string, "fixes": string[] },
+"visuals": { "score": number, "analysis": string, "fixes": string[] },
+"captions": { "score": number, "analysis": string, "fixes": string[] },
+"cta": { "score": number, "analysis": string, "fixes": string[] }
+},
+"viralPrediction": "low" | "medium" | "high" | "very_high",
+"topFix": string,
+"hook3SecondAnalysis": string,
+"bestMoment": { "timestamp": number, "reason": string }
+}` }
+    ];
+
+    if (frames && Array.isArray(frames)) {
+      for (const frame of frames) {
+        parts.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: frame
+          }
+        });
+      }
+    }
+
+    try {
+      const result = await model.generateContent(parts);
+      const text = result.response.text();
+      const clean = text.replace(/```json\n?|```\n?/g, '').trim();
+      return JSON.parse(clean);
+    } catch (e) {
+      console.error('Gemma direct call failed:', e);
+      throw new Error('Failed to analyze reel locally: ' + e.message);
+    }
+  }
+
+  throw new Error("AI is not configured. Please set up a Gemma API key or configure Supabase to use this feature.");
 }
 
 export async function getViralBreakdown(url) {
@@ -285,10 +333,56 @@ export async function getViralBreakdown(url) {
         }
       }
     } catch (e) {
-      console.warn('Edge function failed:', e);
-      throw e;
+      console.warn('Edge function failed, trying fallback:', e);
     }
-  } else {
-    throw new Error("Supabase is not configured. Please configure Supabase to use this feature.");
   }
+  
+  // Fallback: direct Gemma API with env var key
+  if (GEMMA_API_KEY) {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
+
+    let metadata = '';
+    try {
+      const pageRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }});
+      if (pageRes.ok) {
+        const html = await pageRes.text();
+        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        const descMatch = html.match(/<meta[^>]*name="description"[^>]*content="([^"]*)"[^>]*>/i);
+        if (titleMatch) metadata += `Title: ${titleMatch[1]}\n`;
+        if (descMatch) metadata += `Description: ${descMatch[1]}\n`;
+      }
+    } catch (e) {}
+
+    const prompt = `This is a viral short-form video URL: ${url}
+Context from page metadata (if any):
+${metadata || 'No metadata available.'}
+
+Reverse-engineer exactly why it works, or infer a viral template based on the URL context.
+Return JSON ONLY:
+{
+"hookType": string (e.g. "Question hook", "Shock value", "Tutorial promise"),
+"hookTiming": number (seconds),
+"cutRhythm": string,
+"averageClipLength": number,
+"audioAnalysis": string,
+"emotionalArc": string,
+"textStrategy": string,
+"whatToSteal": string[],
+"templateSteps": string[]
+}`;
+
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      const clean = text.replace(/```json\n?|```\n?/g, '').trim();
+      return JSON.parse(clean);
+    } catch (e) {
+      console.error('Gemma direct call failed:', e);
+      throw new Error('Failed to get viral breakdown locally: ' + e.message);
+    }
+  }
+
+  throw new Error("AI is not configured. Please set up a Gemma API key or configure Supabase to use this feature.");
 }

@@ -104,6 +104,43 @@ html, body, #root {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+@keyframes toastEnter {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toastExit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+@keyframes uploadPulse {
+  0%, 100% { opacity: 0.6; border-color: var(--color-accent-primary); }
+  50%      { opacity: 1; border-color: #7c6ff8; }
+}
+@keyframes clipScaleIn {
+  from { transform: scaleX(0.85); opacity: 0.5; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+@keyframes clipScaleOut {
+  from { transform: scale(1); opacity: 1; }
+  to   { transform: scale(0); opacity: 0; }
+}
+@keyframes clipFlash {
+  0%   { box-shadow: 0 0 0 0 rgba(239,159,39,0.5); }
+  50%  { box-shadow: 0 0 0 4px rgba(239,159,39,0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(239,159,39,0); }
+}
+@keyframes playBounce {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+@keyframes shimmerPulse {
+  from { opacity: 0.5; }
+  to   { opacity: 1; }
+}
+@keyframes unsavedPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
 
 .animate-fade-in { animation: fadeIn 0.25s ease-out; }
 .animate-slide-up { animation: slideUp 0.3s ease-out; }
@@ -435,7 +472,7 @@ html, body, #root {
 }
 
 .topbar {
-  height: 52px;
+  height: 44px;
   background: var(--color-bg-primary);
   border-bottom: 1px solid var(--color-border);
   display: flex;
@@ -446,9 +483,59 @@ html, body, #root {
   z-index: 50;
 }
 
+/* ── DRAG HANDLE (vertical resizer between top + timeline) ── */
+
+.layout-drag-handle {
+  height: 7px;
+  background: var(--color-bg-surface);
+  border-top: 0.5px solid var(--color-border);
+  border-bottom: 0.5px solid var(--color-border);
+  cursor: ns-resize;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 10;
+}
+.layout-drag-handle:hover {
+  background: rgba(91, 79, 245, 0.12);
+}
+.layout-drag-handle-dots {
+  display: flex;
+  gap: 3px;
+}
+.layout-drag-handle-dots span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  opacity: 0.35;
+}
+.layout-drag-handle:hover .layout-drag-handle-dots span {
+  opacity: 0.7;
+  background: var(--color-accent-primary);
+}
+
+/* ── PANEL RESIZER (horizontal between left|center|right) ── */
+
+.panel-resizer-v {
+  width: 4px;
+  cursor: ew-resize;
+  background: transparent;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.15s;
+}
+.panel-resizer-v:hover {
+  background: rgba(91, 79, 245, 0.4);
+}
+
+/* ── LEGACY CLASSES (kept for non-editor views) ── */
+
 .editor-layout {
-  display: grid;
-  grid-template-columns: 280px 1fr 320px;
+  display: flex;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -482,13 +569,15 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* ═══════════════════════════════════════
+   TIMELINE PANEL
+   ═══════════════════════════════════════ */
+
 .timeline-panel {
-  height: 220px;
+  height: 100%;
   background: var(--color-timeline-bg);
-  border-top: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
   overflow: hidden;
 }
 
@@ -514,39 +603,42 @@ html, body, #root {
 .timeline-track {
   display: flex;
   align-items: stretch;
-  height: 36px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  position: relative;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
 .timeline-track-label {
-  width: 100px;
+  width: 120px;
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 10px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-secondary);
   background: var(--color-bg-primary);
   border-right: 1px solid var(--color-border);
+  user-select: none;
 }
 
 .timeline-track-content {
   flex: 1;
   position: relative;
   background: var(--color-timeline-track);
-  min-height: 36px;
+  min-height: 48px;
 }
+
+/* ── TIMELINE CLIPS (enriched visual hierarchy) ── */
 
 .timeline-clip {
   position: absolute;
   top: 3px;
   height: calc(100% - 6px);
-  border-radius: 6px;
+  border-radius: 5px;
   display: flex;
-  align-items: center;
-  padding: 0 8px;
+  flex-direction: column;
   font-size: 10px;
   font-weight: 500;
   cursor: grab;
@@ -558,40 +650,133 @@ html, body, #root {
 .timeline-clip:active { cursor: grabbing; }
 .timeline-clip.selected {
   border-color: var(--color-accent-primary);
-  box-shadow: 0 0 0 2px rgba(91, 79, 245, 0.15), var(--shadow-default);
+  box-shadow: 0 0 0 2px rgba(91, 79, 245, 0.2), var(--shadow-default);
 }
 .timeline-clip.type-video {
   background: var(--color-clip-video);
   color: var(--color-clip-video-text);
+  border-color: rgba(91, 79, 245, 0.3);
 }
 .timeline-clip.type-audio {
   background: var(--color-clip-audio);
   color: var(--color-clip-audio-text);
+  border-color: rgba(0, 133, 110, 0.3);
 }
 .timeline-clip.type-photo {
   background: var(--color-clip-photo);
   color: var(--color-clip-photo-text);
+  border-color: rgba(139, 63, 168, 0.3);
 }
 .timeline-clip.type-text {
   background: var(--color-clip-text);
   color: var(--color-clip-text-color);
+  border-color: rgba(138, 98, 0, 0.3);
+}
+.timeline-clip.type-adjustment {
+  background: rgba(155, 89, 182, 0.15);
+  color: #7c3aed;
+  border-color: rgba(155, 89, 182, 0.3);
+}
+
+/* Clip top bar (name + badges) */
+.clip-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1px 6px;
+  flex-shrink: 0;
+  height: 16px;
+  min-height: 16px;
+  gap: 4px;
+}
+.clip-topbar-name {
+  font-size: 9px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  pointer-events: none;
+  line-height: 1.2;
+}
+.clip-topbar-badges {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.clip-badge {
+  font-size: 7px;
+  padding: 0px 3px;
+  border-radius: 2px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* Clip content area (thumbnail / waveform / text) */
+.clip-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+
+/* Clip bottom bar (duration) */
+.clip-bottombar {
+  padding: 0 6px;
+  font-size: 8px;
+  opacity: 0.7;
+  text-align: right;
+  flex-shrink: 0;
+  height: 12px;
+  line-height: 12px;
+  font-family: var(--font-mono);
+  pointer-events: none;
 }
 
 .trim-handle {
   position: absolute;
   top: 0;
-  width: 6px;
+  width: 7px;
   height: 100%;
   cursor: col-resize;
   z-index: 2;
   transition: background 0.1s;
-  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .trim-handle:hover {
   background: rgba(91, 79, 245, 0.25);
 }
+.trim-handle .trim-handle-bar {
+  width: 2px;
+  height: 40%;
+  border-radius: 1px;
+  background: rgba(91, 79, 245, 0.5);
+  pointer-events: none;
+}
 .trim-handle.left { left: 0; }
 .trim-handle.right { right: 0; }
+
+/* Track control buttons */
+.track-ctrl-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: all 0.1s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.track-ctrl-btn:hover {
+  filter: brightness(1.1);
+}
 
 .playhead {
   position: absolute;

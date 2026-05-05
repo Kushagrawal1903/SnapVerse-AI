@@ -65,7 +65,7 @@ export default function ViralBreakdown() {
               onChange={(e) => setUrl(e.target.value)}
               style={{
                 width: '100%', padding: '20px 24px', borderRadius: 12, border: '1px solid var(--color-border)',
-                background: 'var(--color-bg-primary)', color: 'white', fontSize: 16, outline: 'none',
+                background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)', fontSize: 16, outline: 'none',
               }}
             />
 
@@ -101,26 +101,26 @@ export default function ViralBreakdown() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, marginBottom: 32 }}>
-                <div style={{ background: 'var(--color-bg-primary)', padding: 16, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ background: 'var(--color-bg-primary)', padding: 16, borderRadius: 12, border: '1px solid var(--color-border)' }}>
                   <span style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>Hook Type</span>
-                  <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: 'white' }}>{result.hookType}</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: 'var(--color-text-primary)' }}>{result.hookType}</div>
                   <div style={{ fontSize: 12, color: 'var(--color-accent-primary)', marginTop: 4 }}>First {result.hookTiming}s</div>
                 </div>
-                <div style={{ background: 'var(--color-bg-primary)', padding: 16, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ background: 'var(--color-bg-primary)', padding: 16, borderRadius: 12, border: '1px solid var(--color-border)' }}>
                   <span style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>Cut Rhythm</span>
-                  <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: 'white' }}>{result.cutRhythm}</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: 'var(--color-text-primary)' }}>{result.cutRhythm}</div>
                   <div style={{ fontSize: 12, color: 'var(--color-accent-primary)', marginTop: 4 }}>Avg {result.averageClipLength}s / clip</div>
                 </div>
-                <div style={{ background: 'var(--color-bg-primary)', padding: 16, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ background: 'var(--color-bg-primary)', padding: 16, borderRadius: 12, border: '1px solid var(--color-border)' }}>
                   <span style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>Audio Strategy</span>
-                  <div style={{ fontSize: 14, marginTop: 4, color: 'rgba(255,255,255,0.9)', lineHeight: 1.4 }}>{result.audioAnalysis}</div>
+                  <div style={{ fontSize: 14, marginTop: 4, color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>{result.audioAnalysis}</div>
                 </div>
               </div>
 
               <div style={{ marginBottom: 32 }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: 18, fontFamily: 'var(--font-display)', color: 'white' }}>Emotional Arc & Text Strategy</h3>
-                <p style={{ margin: '0 0 12px 0', color: 'rgba(255,255,255,0.8)', fontSize: 15, lineHeight: 1.6 }}><strong>Arc:</strong> {result.emotionalArc}</p>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 15, lineHeight: 1.6 }}><strong>Text:</strong> {result.textStrategy}</p>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: 18, fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)' }}>Emotional Arc & Text Strategy</h3>
+                <p style={{ margin: '0 0 12px 0', color: 'var(--color-text-secondary)', fontSize: 15, lineHeight: 1.6 }}><strong>Arc:</strong> {result.emotionalArc}</p>
+                <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 15, lineHeight: 1.6 }}><strong>Text:</strong> {result.textStrategy}</p>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
@@ -129,7 +129,7 @@ export default function ViralBreakdown() {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     What to Steal
                   </h3>
-                  <ul style={{ margin: 0, paddingLeft: 20, color: 'rgba(255,255,255,0.9)', fontSize: 14, display: 'flex', flexDirection: 'column', gap: 12, lineHeight: 1.5 }}>
+                  <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--color-text-secondary)', fontSize: 14, display: 'flex', flexDirection: 'column', gap: 12, lineHeight: 1.5 }}>
                     {result.whatToSteal.map((item, i) => <li key={i}>{item}</li>)}
                   </ul>
                 </div>
@@ -145,7 +145,7 @@ export default function ViralBreakdown() {
                         <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--color-accent-primary)', flexShrink: 0 }}>
                           {i + 1}
                         </div>
-                        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)', lineHeight: 1.5, marginTop: 2 }}>{step}</div>
+                        <div style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.5, marginTop: 2 }}>{step}</div>
                       </div>
                     ))}
                   </div>

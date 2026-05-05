@@ -182,7 +182,7 @@ export default function ReelAnalyzer() {
               onChange={(e) => { setUrl(e.target.value); setFile(null); }}
               style={{
                 width: '100%', padding: '16px 20px', borderRadius: 8, border: '1px solid var(--color-border)',
-                background: 'var(--color-bg-primary)', color: 'white', fontSize: 15, outline: 'none',
+                background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)', fontSize: 15, outline: 'none',
               }}
             />
 
@@ -233,7 +233,7 @@ export default function ReelAnalyzer() {
                     <circle cx="60" cy="60" r="54" fill="none" stroke="var(--color-accent-primary)" strokeWidth="8" strokeDasharray="339.292" strokeDashoffset={339.292 - (339.292 * result.overallScore) / 100} style={{ transition: 'stroke-dashoffset 1s ease-out' }} strokeLinecap="round" />
                   </svg>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, color: 'white', lineHeight: 1 }}>{result.overallScore}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, color: 'var(--color-text-primary)', lineHeight: 1 }}>{result.overallScore}</span>
                     <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: 1 }}>/ 100</span>
                   </div>
                 </div>
@@ -250,7 +250,7 @@ export default function ReelAnalyzer() {
                       <div style={{ height: '100%', background: 'var(--color-accent-primary)', width: `${data.score}%`, transition: 'width 1s ease-out', borderRadius: 3 }} />
                     </div>
                     <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 8px 0', lineHeight: 1.4 }}>{data.analysis}</p>
-                    <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {data.fixes.map((fix, idx) => <li key={idx}>{fix}</li>)}
                     </ul>
                   </div>
@@ -262,7 +262,7 @@ export default function ReelAnalyzer() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   Top Fix Needed
                 </h4>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', fontSize: 14, lineHeight: 1.5 }}>
+                <p style={{ margin: 0, color: 'var(--color-text-primary)', fontSize: 14, lineHeight: 1.5 }}>
                   {result.topFix}
                 </p>
               </div>

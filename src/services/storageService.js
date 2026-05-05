@@ -184,11 +184,11 @@ export async function restoreMediaBlobs(mediaItems) {
     if (!item.objectUrl || item.objectUrl.startsWith('blob:')) {
       const blob = await loadMediaBlob(item.id);
       if (blob) {
-        restored.push({ ...item, objectUrl: URL.createObjectURL(blob) });
+        restored.push({ ...item, objectUrl: URL.createObjectURL(blob), isOffline: false });
       } else if (item.fileUrl) {
-        restored.push({ ...item, objectUrl: item.fileUrl });
+        restored.push({ ...item, objectUrl: item.fileUrl, isOffline: false });
       } else {
-        restored.push(item);
+        restored.push({ ...item, objectUrl: null, isOffline: true });
       }
     } else {
       restored.push(item);

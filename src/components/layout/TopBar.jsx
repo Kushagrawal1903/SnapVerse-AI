@@ -65,16 +65,8 @@ export default function TopBar() {
           onFocus={(e) => e.target.style.background = 'var(--color-bg-surface)'}
           onBlur={(e) => e.target.style.background = 'transparent'}
         />
-        {/* Save status */}
-        {saveStatus === 'saving' && (
-          <span style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 10, height: 10, border: '1.5px solid var(--color-text-muted)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-            Saving...
-          </span>
-        )}
-        {saveStatus === 'saved' && (
-          <span style={{ fontSize: 11, color: 'var(--color-accent-secondary)', fontWeight: 500 }}>✓ Saved</span>
-        )}
+        {/* Save status indicator */}
+        <SaveIndicator />
       </div>
 
       {/* Navigation Tabs */}
@@ -168,5 +160,55 @@ export default function TopBar() {
         )}
       </div>
     </header>
+  );
+}
+
+function SaveIndicator() {
+  const saveStatus = useUIStore(s => s.saveStatus);
+  const lastSavedTime = useUIStore(s => s.lastSavedTime);
+  const saveState = useProjectStore(s => s.saveState);
+  
+  const [, forceUpdate] = useState(0);
+  
+  // Update relative time display every 30s
+  useEffect(() => {
+    const timer = setInterval(() => forceUpdate(n => n + 1), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Determine visual state: combine store-level saveState with UI saveStatus
+  const status = saveStatus === 'saving' ? 'saving' : saveStatus === 'saved' ? 'saved' : saveState === 'unsaved' ? 'unsaved' : 'saved';
+  
+  const getRelativeTime = () => {
+    if (!lastSavedTime) return '';
+    const diff = Math.floor((Date.now() - lastSavedTime) / 1000);
+    if (diff < 5) return 'just now';
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
+  };
+
+  const configs = {
+    saving: { color: '#5b4ff5', text: 'Saving...', dot: true, spinning: true },
+    saved: { color: '#1D9E75', text: `Saved ${getRelativeTime()}`.trim(), dot: true, spinning: false },
+    unsaved: { color: '#EF9F27', text: 'Unsaved', dot: true, spinning: false },
+  };
+  const cfg = configs[status] || configs.saved;
+
+  return (
+    <span style={{
+      fontSize: 11, color: cfg.color, display: 'flex', alignItems: 'center', gap: 5,
+      fontWeight: 500, transition: 'color 0.2s', fontFamily: 'var(--font-body)',
+    }}>
+      {cfg.spinning ? (
+        <div style={{ width: 8, height: 8, border: `1.5px solid ${cfg.color}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+      ) : (
+        <div style={{
+          width: 6, height: 6, borderRadius: '50%', background: cfg.color,
+          animation: status === 'unsaved' ? 'unsavedPulse 2s ease-in-out infinite' : 'none',
+        }} />
+      )}
+      {cfg.text}
+    </span>
   );
 }

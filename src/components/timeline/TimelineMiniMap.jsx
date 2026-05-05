@@ -8,8 +8,8 @@ export default function TimelineMiniMap({ containerRef }) {
   const timelineZoom = useUIStore(s => s.timelineZoom);
   const minimapRef = useRef(null);
 
-  // Hardcode height to 40px
-  const height = 40;
+  // Compact minimap height
+  const height = 32;
   
   // Calculate width proportional to duration
   const viewportWidth = window.innerWidth; 
@@ -56,11 +56,12 @@ export default function TimelineMiniMap({ containerRef }) {
       style={{
         height: `${height}px`,
         width: '100%',
-        background: '#0a0a0a',
+        background: 'var(--color-bg-primary)',
         borderTop: '1px solid var(--color-border)',
         position: 'relative',
         cursor: 'pointer',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        flexShrink: 0,
       }}
     >
       {/* Track representations */}
@@ -70,10 +71,11 @@ export default function TimelineMiniMap({ containerRef }) {
             {t.clips.map(c => {
               const left = (c.startTime / duration) * 100;
               const width = (c.duration / duration) * 100;
-              let color = 'rgba(91, 79, 245, 0.5)';
-              if (c.type === 'audio') color = 'rgba(46, 204, 113, 0.5)';
-              if (c.type === 'text') color = 'rgba(241, 196, 15, 0.5)';
-              if (c.type === 'adjustment') color = 'rgba(155, 89, 182, 0.5)';
+              let color = 'rgba(91, 79, 245, 0.4)';
+              if (c.type === 'audio') color = 'rgba(0, 184, 148, 0.4)';
+              if (c.type === 'photo') color = 'rgba(139, 63, 168, 0.4)';
+              if (c.type === 'text') color = 'rgba(138, 98, 0, 0.4)';
+              if (c.type === 'adjustment') color = 'rgba(155, 89, 182, 0.4)';
 
               return (
                 <div 

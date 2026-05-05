@@ -52,3 +52,24 @@ export default function MediaLibrary() {
     </div>
   );
 }
+
+// Step 22: Loading Skeleton States
+export function MediaSkeleton() {
+  return (
+    <div style={{ padding: '8px 12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8 }}>
+        {[1, 2, 3, 4, 5, 6].map(i => (
+          <div key={i} style={{ 
+            aspectRatio: '1', borderRadius: 6, background: 'var(--color-bg-surface)', 
+            border: '1px solid var(--color-border)', overflow: 'hidden'
+          }}>
+            <div style={{ width: '100%', height: '70%', background: 'var(--color-border)', animation: 'shimmerPulse 1.5s ease-in-out infinite alternate', animationDelay: `${i * 0.1}s` }} />
+            <div style={{ padding: 6 }}>
+              <div style={{ width: '80%', height: 6, borderRadius: 3, background: 'var(--color-border)', animation: 'shimmerPulse 1.5s ease-in-out infinite alternate', animationDelay: `${i * 0.1 + 0.2}s` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

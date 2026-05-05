@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import useUIStore from '../../stores/useUIStore';
 import useProjectStore from '../../stores/useProjectStore';
 import useAuthStore from '../../stores/useAuthStore';
@@ -6,10 +6,15 @@ import { EXPORT_PRESETS } from '../../utils/constants';
 import { exportVideo, downloadBlob, loadFFmpeg } from '../../services/exportService';
 import { CanvasEngine } from '../../services/canvasEngine';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { showToast } from '../../stores/useToastStore';
 
 export default function ExportModal() {
   const setShowExportModal = useUIStore(s => s.setShowExportModal);
-  const [platform, setPlatform] = useState('instagram');
+  const [step, setStep] = useState(1); // 1: Platform, 2: Quality, 3: Export
+  const [platform, setPlatform] = useState(() => {
+    // Remember last platform (Step 23)
+    return localStorage.getItem('snapverse_lastPlatform') || 'instagram';
+  });
   const [quality, setQuality] = useState('Standard');
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -19,6 +24,18 @@ export default function ExportModal() {
   const cancelledRef = useRef(false);
 
   const preset = EXPORT_PRESETS[platform];
+  const duration = useProjectStore(s => s.duration);
+
+  // Save last platform choice
+  useEffect(() => {
+    localStorage.setItem('snapverse_lastPlatform', platform);
+  }, [platform]);
+
+  const estimateTime = () => {
+    const base = duration * (quality === 'High' ? 3 : quality === 'Standard' ? 2 : 1);
+    if (base < 60) return `~${Math.ceil(base)}s`;
+    return `~${Math.ceil(base / 60)}min`;
+  };
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -28,24 +45,19 @@ export default function ExportModal() {
     cancelledRef.current = false;
 
     try {
-      // Step 1: Load FFmpeg.wasm
       setStage('Loading encoder...');
       setProgress(5);
       await loadFFmpeg();
-
       if (cancelledRef.current) return;
 
-      // Step 2: Set up render canvas
       setStage('Preparing canvas...');
       setProgress(10);
-
       const state = useProjectStore.getState();
       const renderCanvas = document.createElement('canvas');
       renderCanvas.width = preset.width;
       renderCanvas.height = preset.height;
       const engine = new CanvasEngine(renderCanvas);
 
-      // Register media elements
       for (const track of state.tracks) {
         for (const clip of track.clips) {
           if (!clip.mediaId) continue;
@@ -80,59 +92,34 @@ export default function ExportModal() {
 
       if (cancelledRef.current) return;
 
-      // Step 3: Render frames
       setStage('Rendering frames...');
-      const fps = preset.fps;
-      const duration = state.duration;
-      const totalFrames = Math.ceil(duration * fps);
-
-      const onRenderProgress = (frameProgress) => {
-        setProgress(10 + frameProgress * 60); // 10-70%
-      };
-
+      const onRenderProgress = (frameProgress) => setProgress(10 + frameProgress * 60);
       const onEncodeProgress = (encodeProgress) => {
         setStage('Encoding video...');
-        setProgress(70 + encodeProgress * 25); // 70-95%
+        setProgress(70 + encodeProgress * 25);
       };
 
-      // Render frame by frame and export
       const blob = await exportVideo(
-        renderCanvas,
-        engine,
-        state.tracks,
-        state.aspectRatio,
-        duration,
-        fps,
-        quality,
-        onRenderProgress,
-        onEncodeProgress,
-        cancelledRef
+        renderCanvas, engine, state.tracks, state.aspectRatio, state.duration,
+        preset.fps, quality, onRenderProgress, onEncodeProgress, cancelledRef
       );
 
       if (cancelledRef.current || !blob) return;
 
-      // Step 4: Download
       setStage('Downloading...');
       setProgress(98);
       const projectName = state.projectName || 'snapverse_export';
       const fileName = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_${platform}.mp4`;
       downloadBlob(blob, fileName);
 
-      // Save export record to Supabase
       if (isSupabaseConfigured()) {
         const user = useAuthStore.getState().user;
         const projectId = state.projectId;
         if (user && user.id !== 'local' && projectId) {
           try {
             await supabase.from('exports').insert({
-              project_id: projectId,
-              user_id: user.id,
-              platform: preset.label,
-              quality,
-              format: 'mp4',
-              file_size: blob.size,
-              duration: duration,
-              status: 'complete',
+              project_id: projectId, user_id: user.id, platform: preset.label,
+              quality, format: 'mp4', file_size: blob.size, duration: state.duration, status: 'complete',
             });
           } catch {}
         }
@@ -140,16 +127,14 @@ export default function ExportModal() {
 
       setProgress(100);
       setStage('Complete!');
-      setExportResult({
-        size: (blob.size / (1024 * 1024)).toFixed(1),
-        fileName,
-      });
-
+      setExportResult({ size: (blob.size / (1024 * 1024)).toFixed(1), fileName });
+      showToast('Export complete! File downloaded.', 'success', 4000);
       engine.destroy();
     } catch (err) {
       console.error('Export failed:', err);
       setError(err.message || 'Export failed');
       setIsExporting(false);
+      showToast('Export failed — check console for details', 'error', 4000);
     }
   };
 
@@ -160,132 +145,220 @@ export default function ExportModal() {
     setStage('');
   };
 
+  const platformEmojis = { instagram: '📸', tiktok: '🎵', youtube: '📺' };
+
   return (
     <div className="modal-overlay" onClick={() => !isExporting && setShowExportModal(false)}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div style={{ padding: '20px 24px' }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
-            Export Reel
-          </h3>
-          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 20 }}>
-            Render your project using FFmpeg.wasm — entirely in your browser.
-          </p>
-
-          {/* Platform presets */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            {Object.entries(EXPORT_PRESETS).map(([key, val]) => (
-              <button
-                key={key}
-                className="card"
-                onClick={() => !isExporting && setPlatform(key)}
-                style={{
-                  flex: 1, padding: '14px 12px', textAlign: 'center', cursor: 'pointer',
-                  border: platform === key ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
-                  background: platform === key ? 'rgba(91,79,245,0.04)' : 'white',
-                  transition: 'all 0.15s', opacity: isExporting ? 0.6 : 1,
-                }}
-              >
-                <div style={{ fontSize: 24, marginBottom: 6 }}>
-                  {key === 'instagram' ? '📸' : key === 'tiktok' ? '🎵' : '📺'}
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 600 }}>{val.label}</div>
-                <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                  {val.width}×{val.height}
-                </div>
-              </button>
-            ))}
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
+        <div style={{ padding: '24px 28px' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, marginBottom: 2 }}>
+                Export Reel
+              </h3>
+              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
+                {!isExporting && `Step ${step} of 3`}
+              </p>
+            </div>
+            {!isExporting && (
+              <button onClick={() => setShowExportModal(false)} style={{
+                background: 'none', border: 'none', color: 'var(--color-text-muted)',
+                cursor: 'pointer', fontSize: 18, padding: 4,
+              }}>×</button>
+            )}
           </div>
 
-          {/* Quality selector */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>Quality</label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {['Draft', 'Standard', 'High'].map(q => (
-                <button
-                  key={q}
-                  className={`pill-tab ${quality === q ? 'active' : ''}`}
-                  onClick={() => !isExporting && setQuality(q)}
-                  style={{ flex: 1, justifyContent: 'center' }}
-                >
-                  {q}
-                </button>
+          {/* Step indicators */}
+          {!isExporting && (
+            <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
+              {[1, 2, 3].map(s => (
+                <div key={s} style={{
+                  flex: 1, height: 3, borderRadius: 2,
+                  background: s <= step ? 'var(--color-accent-primary)' : 'var(--color-border)',
+                  transition: 'background 0.2s',
+                }} />
               ))}
-            </div>
-          </div>
-
-          {/* Settings summary */}
-          <div style={{
-            background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-default)',
-            padding: 14, marginBottom: 20,
-          }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={{ fontSize: 10, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>Resolution</label>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{preset.width}×{preset.height}</span>
-              </div>
-              <div>
-                <label style={{ fontSize: 10, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>Frame Rate</label>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{preset.fps} fps</span>
-              </div>
-              <div>
-                <label style={{ fontSize: 10, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>Quality</label>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{quality} (CRF {quality === 'High' ? '18' : quality === 'Standard' ? '23' : '28'})</span>
-              </div>
-              <div>
-                <label style={{ fontSize: 10, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>Format</label>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>MP4 (H.264)</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div style={{
-              padding: '10px 14px', borderRadius: 'var(--radius-default)',
-              background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626',
-              fontSize: 12, marginBottom: 16,
-            }}>
-              {error}
             </div>
           )}
 
-          {/* Export progress */}
+          {/* Export progress view */}
           {isExporting ? (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 500 }}>{stage}</span>
-                <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' }}>{Math.round(progress)}%</span>
+            <div className="animate-fade-in">
+              {/* Stage steps */}
+              <div style={{ marginBottom: 20 }}>
+                {['Loading encoder', 'Rendering frames', 'Encoding video', 'Complete'].map((label, i) => {
+                  const stageIndex = progress < 10 ? 0 : progress < 70 ? 1 : progress < 95 ? 2 : 3;
+                  const isDone = i < stageIndex;
+                  const isCurrent = i === stageIndex;
+                  return (
+                    <div key={label} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0',
+                      color: isDone ? 'var(--color-accent-secondary)' : isCurrent ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                      fontSize: 12, fontWeight: isCurrent ? 600 : 400,
+                    }}>
+                      {isDone ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      ) : isCurrent ? (
+                        <div style={{ width: 14, height: 14, border: '2px solid var(--color-accent-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                      ) : (
+                        <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid var(--color-border)' }} />
+                      )}
+                      {label}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="export-progress-bar">
-                <div className="export-progress-fill" style={{ width: `${progress}%` }} />
+
+              {/* Progress bar */}
+              <div style={{ marginBottom: 6 }}>
+                <div className="export-progress-bar">
+                  <div className="export-progress-fill" style={{ width: `${progress}%` }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{stage}</span>
+                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' }}>{Math.round(progress)}%</span>
+                </div>
               </div>
+
               {progress >= 100 && exportResult ? (
-                <div style={{ textAlign: 'center', marginTop: 20 }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Export Complete!</div>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 12 }}>
+                <div style={{ textAlign: 'center', marginTop: 24 }}>
+                  <div style={{ fontSize: 40, marginBottom: 8 }}>🎉</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, fontFamily: 'var(--font-display)' }}>Export Complete!</div>
+                  <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 16 }}>
                     {exportResult.fileName} · {exportResult.size} MB
                   </div>
-                  <button className="btn-export" onClick={() => setShowExportModal(false)}>
+                  <button className="btn-export" onClick={() => setShowExportModal(false)} style={{ width: '100%', justifyContent: 'center' }}>
                     Done
                   </button>
                 </div>
               ) : (
-                <button className="btn-ghost" onClick={handleCancel} style={{ width: '100%', justifyContent: 'center', marginTop: 12 }}>
+                <button className="btn-ghost" onClick={handleCancel} style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}>
                   Cancel
                 </button>
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-ghost" onClick={() => setShowExportModal(false)} style={{ flex: 1, justifyContent: 'center' }}>
-                Cancel
-              </button>
-              <button className="btn-export" onClick={handleExport} style={{ flex: 2, justifyContent: 'center' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Export to {preset.label}
-              </button>
-            </div>
+            <>
+              {/* Step 1: Platform */}
+              {step === 1 && (
+                <div className="animate-fade-in">
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-text-primary)' }}>Choose platform</div>
+                  <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+                    {Object.entries(EXPORT_PRESETS).map(([key, val]) => (
+                      <button
+                        key={key}
+                        className="card"
+                        onClick={() => setPlatform(key)}
+                        style={{
+                          flex: 1, padding: '20px 12px', textAlign: 'center', cursor: 'pointer',
+                          border: platform === key ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
+                          background: platform === key ? 'rgba(91,79,245,0.04)' : 'white',
+                          transition: 'all 0.15s', borderRadius: 12,
+                        }}
+                      >
+                        <div style={{ fontSize: 28, marginBottom: 8 }}>{platformEmojis[key]}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{val.label}</div>
+                        <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                          {val.width}×{val.height} · {val.fps}fps
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <button className="btn-export" onClick={() => setStep(2)} style={{ width: '100%', justifyContent: 'center', padding: '12px 0' }}>
+                    Next →
+                  </button>
+                </div>
+              )}
+
+              {/* Step 2: Quality */}
+              {step === 2 && (
+                <div className="animate-fade-in">
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-text-primary)' }}>Select quality</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+                    {[
+                      { id: 'Draft', label: 'Draft', desc: 'Fast rendering, lower quality', crf: 28 },
+                      { id: 'Standard', label: 'Standard', desc: 'Balanced quality & speed', crf: 23 },
+                      { id: 'High', label: 'High', desc: 'Best quality, slower', crf: 18 },
+                    ].map(q => (
+                      <button
+                        key={q.id}
+                        onClick={() => setQuality(q.id)}
+                        style={{
+                          padding: '14px 16px', textAlign: 'left', cursor: 'pointer',
+                          border: quality === q.id ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
+                          background: quality === q.id ? 'rgba(91,79,245,0.04)' : 'white',
+                          borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{q.label}</div>
+                          <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{q.desc}</div>
+                        </div>
+                        {quality === q.id && (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-primary)" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-ghost" onClick={() => setStep(1)} style={{ flex: 1, justifyContent: 'center' }}>← Back</button>
+                    <button className="btn-export" onClick={() => setStep(3)} style={{ flex: 2, justifyContent: 'center' }}>Next →</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Confirm & Export */}
+              {step === 3 && (
+                <div className="animate-fade-in">
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-text-primary)' }}>Ready to export</div>
+
+                  {/* Summary card */}
+                  <div style={{
+                    background: 'var(--color-bg-surface)', borderRadius: 10,
+                    padding: 16, marginBottom: 20,
+                  }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                      <div>
+                        <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>Platform</div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{platformEmojis[platform]} {preset.label}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>Resolution</div>
+                        <div style={{ fontSize: 13, fontWeight: 500 }}>{preset.width}×{preset.height}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>Quality</div>
+                        <div style={{ fontSize: 13, fontWeight: 500 }}>{quality}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>Est. Time</div>
+                        <div style={{ fontSize: 13, fontWeight: 500 }}>{estimateTime()}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div style={{
+                      padding: '10px 14px', borderRadius: 8,
+                      background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626',
+                      fontSize: 12, marginBottom: 16,
+                    }}>
+                      {error}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-ghost" onClick={() => setStep(2)} style={{ flex: 1, justifyContent: 'center' }}>← Back</button>
+                    <button className="btn-export" onClick={handleExport} style={{ flex: 2, justifyContent: 'center', padding: '12px 0', fontSize: 14 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      Export to {preset.label}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
