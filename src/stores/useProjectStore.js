@@ -5,7 +5,7 @@ import { TRACK_CONFIG } from '../utils/constants';
 const MAX_HISTORY = 50;
 
 function createEmptyTracks() {
-  return TRACK_CONFIG.map(t => ({ id: t.id, label: t.label, icon: t.icon, accepts: t.accepts, clips: [], muted: false, locked: false }));
+  return TRACK_CONFIG.map(t => ({ id: t.id, label: t.label, icon: t.icon, accepts: t.accepts, clips: [], muted: false, solo: false, volume: 100, locked: false, height: 80, isCustom: false }));
 }
 
 function snapshot(state) {
@@ -90,6 +90,47 @@ const useProjectStore = create((set, get) => ({
     set(s => ({ mediaItems: s.mediaItems.filter(m => m.id !== id) }));
   },
 
+  // Tracks
+  updateTrack: (trackId, updates) => {
+    get().pushHistory();
+    set(s => ({
+      tracks: s.tracks.map(t => t.id === trackId ? { ...t, ...updates } : t)
+    }));
+  },
+  
+  addTrack: (type) => {
+    get().pushHistory();
+    const newTrack = {
+      id: generateId(),
+      label: `Custom ${type.charAt(0).toUpperCase() + type.slice(1)} Track`,
+      icon: type === 'video' ? '🎬' : type === 'audio' ? '🎵' : '📝',
+      accepts: [type],
+      clips: [],
+      muted: false,
+      solo: false,
+      volume: 100,
+      locked: false,
+      height: 80,
+      isCustom: true
+    };
+    set(s => ({ tracks: [...s.tracks, newTrack] }));
+  },
+
+  deleteTrack: (trackId) => {
+    get().pushHistory();
+    set(s => ({ tracks: s.tracks.filter(t => t.id !== trackId || !t.isCustom) }));
+  },
+
+  reorderTracks: (startIndex, endIndex) => {
+    get().pushHistory();
+    set(s => {
+      const newTracks = Array.from(s.tracks);
+      const [removed] = newTracks.splice(startIndex, 1);
+      newTracks.splice(endIndex, 0, removed);
+      return { tracks: newTracks };
+    });
+  },
+
   // Clips
   addClip: (trackId, clip) => {
     get().pushHistory();
@@ -104,6 +145,9 @@ const useProjectStore = create((set, get) => ({
       trimOut: 0,
       filter: 'none',
       adjustments: { brightness: 0, contrast: 0, saturation: 0, temperature: 0, vignette: 0, grain: 0, blur: 0 },
+      transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 100 },
+      crop: { x: 0, y: 0, width: 1, height: 1 },
+      chromaKey: { enabled: false, color: [0, 255, 0], threshold: 40, feather: 20 },
       volume: 100,
       fadeIn: 0,
       fadeOut: 0,
@@ -117,6 +161,9 @@ const useProjectStore = create((set, get) => ({
       textBg: clip.textBg || 'none',
       entrance: clip.entrance || 'None',
       exit: clip.exit || 'None',
+      // Transitions
+      transitionType: clip.transitionType || 'None',
+      transitionDuration: clip.transitionDuration || 0.5,
       ...clip,
       id: generateId(),
     };
@@ -354,6 +401,56 @@ const useProjectStore = create((set, get) => ({
         })),
       })),
     };
+  },
+
+  autoEnhanceProject: () => {
+    get().pushHistory();
+    let enhancementsCount = 0;
+    
+    set(s => {
+      const newTracks = s.tracks.map(t => {
+        const newClips = t.clips.map((c, i, arr) => {
+          let updated = { ...c };
+          
+          // Audio: normalize volume to 70%
+          if (c.type === 'audio' && c.volume === 100) {
+            updated.volume = 70;
+            enhancementsCount++;
+            
+            // Fade in first audio clip, fade out last audio clip
+            if (i === 0) {
+              updated.fadeIn = 1;
+              enhancementsCount++;
+            }
+            if (i === arr.length - 1) {
+              updated.fadeOut = 1;
+              enhancementsCount++;
+            }
+          }
+          
+          // Video: apply cinematic filter if none
+          if (c.type === 'video' && c.filter === 'none') {
+            updated.filter = 'cinematic';
+            enhancementsCount++;
+            
+            // Apply Fade transition if 'None' or 'Cut'
+            if (i > 0 && c.transitionType === 'None') {
+              updated.transitionType = 'Fade';
+              updated.transitionDuration = 0.5;
+              enhancementsCount++;
+            }
+          }
+          
+          return updated;
+        });
+        return { ...t, clips: newClips };
+      });
+      return { tracks: newTracks };
+    });
+    
+    // In a full implementation, we might check for text tracks and call AI caption generation here
+    
+    return enhancementsCount;
   },
 }));
 

@@ -59,7 +59,7 @@ export function generateAudioWaveform(file) {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffer = await audioContext.decodeAudioData(e.target.result);
         const rawData = audioBuffer.getChannelData(0);
-        const samples = 80;
+        const samples = 400;
         const blockSize = Math.floor(rawData.length / samples);
         const waveform = [];
         for (let i = 0; i < samples; i++) {

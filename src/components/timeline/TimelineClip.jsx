@@ -1,6 +1,8 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import useProjectStore from '../../stores/useProjectStore';
 import useUIStore from '../../stores/useUIStore';
+import { encodeWAV } from '../../utils/audioEncoder';
+import { getAudioContext } from '../../services/audioEngine';
 
 export default function TimelineClip({ clip, trackId }) {
   const updateClip = useProjectStore(s => s.updateClip);
@@ -44,14 +46,27 @@ export default function TimelineClip({ clip, trackId }) {
     const canvas = waveCanvasRef.current;
     const ctx = canvas.getContext('2d');
     const { width: cw, height: ch } = canvas;
+    
+    const startRatio = (clip.trimIn || 0) / clip.duration;
+    const endRatio = (clip.duration - (clip.trimOut || 0)) / clip.duration;
+    
+    const totalSamples = media.waveform.length;
+    const startIndex = Math.floor(startRatio * totalSamples);
+    const endIndex = Math.max(startIndex + 1, Math.floor(endRatio * totalSamples));
+    
+    const slice = media.waveform.slice(startIndex, endIndex);
+    
     ctx.clearRect(0, 0, cw, ch);
     ctx.fillStyle = clip.type === 'audio' ? 'rgba(0,133,110,0.4)' : 'rgba(91,79,245,0.3)';
-    const barW = cw / media.waveform.length;
-    media.waveform.forEach((val, i) => {
-      const barH = val * ch * 0.8;
-      ctx.fillRect(i * barW, (ch - barH) / 2, Math.max(1, barW - 0.5), barH);
-    });
-  }, [clip.mediaId, clip.type, mediaItems]);
+    
+    if (slice.length > 0) {
+      const barW = cw / slice.length;
+      slice.forEach((val, i) => {
+        const barH = val * ch * 0.8;
+        ctx.fillRect(i * barW, (ch - barH) / 2, Math.max(1, barW - 0.5), barH);
+      });
+    }
+  }, [clip.mediaId, clip.type, clip.trimIn, clip.trimOut, clip.duration, mediaItems]);
 
   const handleMouseDown = useCallback((e) => {
     if (e.button !== 0) return;
@@ -239,6 +254,78 @@ export default function TimelineClip({ clip, trackId }) {
       { label: '📋 Duplicate', action: () => {
         duplicateClips(currentSelection);
       }},
+      { label: '🎵 Detach Audio', action: async () => {
+        if (!media || clip.type !== 'video') return;
+        try {
+          // Detach takes a bit, so ideally we show a spinner, but we do this sync for now
+          const response = await fetch(media.objectUrl);
+          const arrayBuffer = await response.arrayBuffer();
+          const ctx = getAudioContext();
+          const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+          const wavBlob = encodeWAV(audioBuffer);
+          const url = URL.createObjectURL(wavBlob);
+          const store = useProjectStore.getState();
+          const newMediaId = `detached-${Date.now()}`;
+          
+          store.addMedia({
+            id: newMediaId,
+            name: `${clip.name} (Audio)`,
+            type: 'audio',
+            objectUrl: url,
+            duration: clip.duration,
+            waveform: []
+          });
+          
+          const audioTrack = tracks.find(t => t.id === 'audio1' || t.accepts?.includes('audio') && !t.accepts?.includes('video'));
+          if (audioTrack) {
+            store.addClip(audioTrack.id, {
+              type: 'audio',
+              mediaId: newMediaId,
+              startTime: clip.startTime,
+              duration: clip.duration,
+              trimIn: clip.trimIn || 0,
+              trimOut: clip.trimOut || 0,
+              name: `${clip.name} (Audio)`
+            });
+            updateClip(trackId, clip.id, { audioDetached: true });
+          }
+        } catch (e) {
+          console.error('Failed to detach audio', e);
+        }
+      }, disabled: clip.type !== 'video' || clip.audioDetached },
+      { label: '❄ Freeze Frame Here', action: () => {
+        const canvas = document.getElementById('main-preview-canvas');
+        if (!canvas) return;
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const store = useProjectStore.getState();
+          const mediaId = `freeze-${Date.now()}`;
+          store.addMedia({
+            id: mediaId,
+            name: 'Freeze Frame',
+            type: 'photo',
+            objectUrl: url
+          });
+          if (rippleEdit) {
+            store.shiftClips(trackId, currentTime, 2);
+          }
+          store.addClip(trackId, {
+            type: 'photo',
+            mediaId,
+            startTime: currentTime,
+            duration: 2,
+            name: 'Freeze Frame'
+          });
+        }, 'image/jpeg', 0.9);
+      }, disabled: clip.type !== 'video' },
+      { label: '⏪ Reverse', action: () => {
+        currentSelection.forEach(id => {
+          const tId = tracks.find(t => t.clips.some(c => c.id === id))?.id;
+          const c = tracks.find(t => t.id === tId)?.clips.find(c => c.id === id);
+          if (tId && c) updateClip(tId, id, { reversed: !c.reversed });
+        });
+      }, disabled: clip.type !== 'video' && clip.type !== 'audio' },
       { label: '🗑 Delete', action: () => {
         deleteClips(currentSelection, rippleEdit);
         useUIStore.getState().clearSelection();
@@ -303,13 +390,109 @@ export default function TimelineClip({ clip, trackId }) {
             }}
           />
         )}
+        
+        {/* Beat Markers */}
+        {clip.beats && clip.type === 'audio' && (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            {clip.beats.map((beatTime, i) => {
+              const effectiveTime = beatTime - (clip.trimIn || 0);
+              if (effectiveTime < 0 || effectiveTime > (clip.duration - (clip.trimIn||0) - (clip.trimOut||0))) return null;
+              return (
+                <div key={i} style={{
+                  position: 'absolute',
+                  left: effectiveTime * timelineZoom,
+                  top: 0, bottom: 0,
+                  width: 1,
+                  background: 'rgba(255, 255, 255, 0.4)',
+                  borderLeft: '1px solid var(--color-accent-primary)',
+                }} />
+              );
+            })}
+          </div>
+        )}
+        
+        {/* Volume Automation Overlay */}
+        {clip.volumeAutomation && (
+          <div
+            style={{ position: 'absolute', inset: 0, zIndex: 10, cursor: 'crosshair' }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+              const time = (e.clientX - rect.left) / timelineZoom;
+              const volume = Math.max(0, Math.min(200, ((rect.height - (e.clientY - rect.top)) / rect.height) * 200));
+              
+              const currentKfs = clip.volumeKeyframes || [
+                { time: 0, volume: clip.volume ?? 100 },
+                { time: clip.duration - (clip.trimIn||0) - (clip.trimOut||0), volume: clip.volume ?? 100 }
+              ];
+              const newKfs = [...currentKfs, { time, volume }].sort((a,b) => a.time - b.time);
+              updateClip(trackId, clip.id, { volumeKeyframes: newKfs });
+            }}
+          >
+            <svg width="100%" height="100%" style={{ overflow: 'visible', pointerEvents: 'none' }}>
+              {(clip.volumeKeyframes || [
+                { time: 0, volume: clip.volume ?? 100 },
+                { time: clip.duration - (clip.trimIn||0) - (clip.trimOut||0), volume: clip.volume ?? 100 }
+              ]).map((kf, i, arr) => {
+                const x = kf.time * timelineZoom;
+                const y = `calc(100% - ${kf.volume / 2}%)`;
+                
+                const next = arr[i + 1];
+                return (
+                  <g key={i}>
+                    {next && (
+                      <line
+                        x1={x} y1={y}
+                        x2={next.time * timelineZoom} y2={`calc(100% - ${next.volume / 2}%)`}
+                        stroke="var(--color-accent-primary)" strokeWidth="2"
+                      />
+                    )}
+                    <circle
+                      cx={x} cy={y} r="4" fill="#fff" stroke="var(--color-accent-primary)" strokeWidth="2"
+                      style={{ pointerEvents: 'auto', cursor: 'ns-resize' }}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        const startY = e.clientY;
+                        const startVol = kf.volume;
+                        const handleMove = (moveE) => {
+                          const dy = moveE.clientY - startY;
+                          const dVol = -(dy / e.currentTarget.ownerSVGElement.clientHeight) * 200;
+                          const newVol = Math.max(0, Math.min(200, startVol + dVol));
+                          const newKfs = [...arr];
+                          newKfs[i] = { ...kf, volume: newVol };
+                          updateClip(trackId, clip.id, { volumeKeyframes: newKfs });
+                        };
+                        const handleUp = () => {
+                          window.removeEventListener('pointermove', handleMove);
+                          window.removeEventListener('pointerup', handleUp);
+                        };
+                        window.addEventListener('pointermove', handleMove);
+                        window.addEventListener('pointerup', handleUp);
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        if (i !== 0 && i !== arr.length - 1) {
+                          const newKfs = arr.filter((_, idx) => idx !== i);
+                          updateClip(trackId, clip.id, { volumeKeyframes: newKfs });
+                        }
+                      }}
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        )}
 
         {/* Clip label */}
         <span style={{
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           flex: 1, pointerEvents: 'none', position: 'relative', zIndex: 1,
           textShadow: showThumb ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+          display: 'flex', alignItems: 'center', gap: 4
         }}>
+          {clip.audioDetached && <span title="Audio Detached">🔗</span>}
+          {clip.reversed && <span style={{ background: 'var(--color-danger)', color: '#fff', fontSize: 8, padding: '1px 4px', borderRadius: 2, fontWeight: 'bold' }}>REV</span>}
           {clip.type === 'text' ? (clip.text || clip.name) : clip.name}
         </span>
 

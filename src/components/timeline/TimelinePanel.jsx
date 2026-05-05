@@ -1,10 +1,13 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect, useState } from 'react';
 import useProjectStore from '../../stores/useProjectStore';
 import useUIStore from '../../stores/useUIStore';
-import { TRACK_CONFIG } from '../../utils/constants';
 import TimelineRuler from './TimelineRuler';
 import TimelineTrack from './TimelineTrack';
 import TimelineControls from './TimelineControls';
+import ClipPropertiesPanel from './ClipPropertiesPanel';
+import SpeedCurvePanel from './SpeedCurvePanel';
+import KeyframeTimeline from './KeyframeTimeline';
+import TimelineMiniMap from './TimelineMiniMap';
 
 export default function TimelinePanel() {
   const tracks = useProjectStore(s => s.tracks);
@@ -18,6 +21,9 @@ export default function TimelinePanel() {
   const selectClip = useUIStore(s => s.selectClip);
   const clearSelection = useUIStore(s => s.clearSelection);
   const containerRef = useRef(null);
+  
+  // Force re-render on scroll for minimap update
+  const [, setScrollUpdate] = useState(0);
 
   const handleWheel = useCallback((e) => {
     if (e.ctrlKey || e.metaKey) {
@@ -66,7 +72,7 @@ export default function TimelinePanel() {
 
   // Rubber-band selection
   const handleMouseDown = useCallback((e) => {
-    if (e.button !== 0 || e.target.closest('.timeline-clip') || e.target.closest('.playhead')) return;
+    if (e.button !== 0 || e.target.closest('.timeline-clip') || e.target.closest('.playhead') || e.target.closest('.timeline-minimap-container')) return;
     
     // Clear selection if clicking empty area without Shift/Ctrl
     if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
@@ -98,14 +104,14 @@ export default function TimelinePanel() {
       }
 
       // We need to approximate clip bounds.
-      // Track height is roughly 80px + gap. Ruler is ~30px.
       let trackY = 30; // Ruler
       state.tracks.forEach(t => {
+        const tHeight = t.height || 80;
         t.clips.forEach(c => {
           const cx1 = 100 + c.startTime * timelineZoom;
           const cx2 = cx1 + (c.duration - (c.trimIn||0) - (c.trimOut||0)) * timelineZoom;
           const cy1 = trackY;
-          const cy2 = trackY + 80;
+          const cy2 = trackY + tHeight;
           
           const intersects = !(rx2 < cx1 || rx1 > cx2 || ry2 < cy1 || ry1 > cy2);
           if (intersects) {
@@ -114,7 +120,7 @@ export default function TimelinePanel() {
             newSelection.delete(c.id);
           }
         });
-        trackY += 92; // 80 + padding/margin
+        trackY += tHeight + 12; // Height + padding/margin
       });
       
       useUIStore.setState({ selectedClipIds: newSelection, showClipProperties: newSelection.size > 0 });
@@ -150,7 +156,7 @@ export default function TimelinePanel() {
   } : null;
 
   return (
-    <div className="timeline-panel">
+    <div className="timeline-panel" style={{ display: 'flex', flexDirection: 'column' }}>
       <TimelineControls />
       <div
         ref={containerRef}
@@ -159,21 +165,24 @@ export default function TimelinePanel() {
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
         onMouseDown={handleMouseDown}
-        style={{ position: 'relative', overflow: 'auto' }}
+        onScroll={() => setScrollUpdate(Date.now())}
+        style={{ position: 'relative', overflow: 'auto', flex: 1 }}
       >
         <div style={{ minWidth: totalWidth, position: 'relative', minHeight: '100%' }}>
           {rubberBand.active && <div style={rbStyle} />}
           <TimelineRuler containerRef={containerRef} />
-          {TRACK_CONFIG.map((tc) => {
-            const track = tracks.find(t => t.id === tc.id);
-            return (
-              <TimelineTrack
-                key={tc.id}
-                config={tc}
-                track={track}
-              />
-            );
-          })}
+          {tracks.map((track) => (
+            <TimelineTrack
+              key={track.id}
+              config={{
+                id: track.id,
+                icon: track.icon,
+                label: track.label,
+                accepts: track.accepts,
+              }}
+              track={track}
+            />
+          ))}
           {/* Playhead */}
           <div
             className="playhead"
@@ -181,6 +190,10 @@ export default function TimelinePanel() {
             onMouseDown={handlePlayheadDrag}
           />
         </div>
+        <KeyframeTimeline />
+      </div>
+      <div className="timeline-minimap-container">
+        <TimelineMiniMap containerRef={containerRef} />
       </div>
     </div>
   );

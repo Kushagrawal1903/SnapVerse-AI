@@ -200,7 +200,7 @@ export default function AIAdvisorPanel() {
             <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
               {aiAvailable
                 ? 'Add some clips to your timeline, then click "Analyze Project" for creative feedback and suggestions.'
-                : 'Set VITE_GEMINI_API_KEY in your .env file or configure Supabase Edge Functions to enable AI features.'}
+                : 'Set VITE_GEMMA_API_KEY in your .env file or configure Supabase Edge Functions to enable AI features.'}
             </div>
           </div>
         )}

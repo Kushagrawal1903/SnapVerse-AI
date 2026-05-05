@@ -11,6 +11,8 @@ export default function TopBar() {
   const setShowExportModal = useUIStore(s => s.setShowExportModal);
   const setShowShortcutsModal = useUIStore(s => s.setShowShortcutsModal);
   const saveStatus = useUIStore(s => s.saveStatus);
+  const currentView = useUIStore(s => s.currentView);
+  const setCurrentView = useUIStore(s => s.setCurrentView);
 
   const user = useAuthStore(s => s.user);
   const signOut = useAuthStore(s => s.signOut);
@@ -73,6 +75,32 @@ export default function TopBar() {
         {saveStatus === 'saved' && (
           <span style={{ fontSize: 11, color: 'var(--color-accent-secondary)', fontWeight: 500 }}>✓ Saved</span>
         )}
+      </div>
+
+      {/* Navigation Tabs */}
+      <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-bg-surface)', padding: 4, borderRadius: 8, gap: 4 }}>
+        {['editor', 'analyze', 'breakdown'].map(view => (
+          <button
+            key={view}
+            onClick={() => setCurrentView(view)}
+            style={{
+              padding: '6px 16px',
+              border: 'none',
+              background: currentView === view ? 'var(--color-bg-secondary)' : 'transparent',
+              color: currentView === view ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: 'var(--font-display)',
+              cursor: 'pointer',
+              textTransform: 'capitalize',
+              boxShadow: currentView === view ? 'var(--shadow-sm)' : 'none',
+              transition: 'all 0.2s',
+            }}
+          >
+            {view === 'editor' ? 'Editor' : view === 'analyze' ? 'Reel Analyzer' : 'Viral Breakdown'}
+          </button>
+        ))}
       </div>
 
       {/* Right actions */}

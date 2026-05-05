@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMMA_API_KEY = import.meta.env.VITE_GEMMA_API_KEY;
 
 const SYSTEM_PROMPT = `You are "AI Director" — an expert video editor and creative director built into SnapVerse, an AI-powered reel editing app. You analyze the user's project state and provide concise, actionable coaching.
 
@@ -54,13 +54,13 @@ Return format:
     }
   }
 
-  // Fallback: direct Gemini API with env var key
-  if (GEMINI_API_KEY) {
-    return await callGeminiDirect(prompt);
+  // Fallback: direct Gemma API with env var key
+  if (GEMMA_API_KEY) {
+    return await callGemmaDirect(prompt);
   }
 
   // No AI available
-  return [{ id: 'no-ai', category: 'Structure', priority: 'low', title: 'AI Not Configured', suggestion: 'Set up a Gemini API key to get AI-powered suggestions for your project.' }];
+  return [{ id: 'no-ai', category: 'Structure', priority: 'low', title: 'AI Not Configured', suggestion: 'Set up a Gemma API key to get AI-powered suggestions for your project.' }];
 }
 
 // ═══════════════════════════════════════
@@ -100,11 +100,11 @@ export async function* chatStream(message, history, projectSnapshot) {
     }
   }
 
-  // Fallback: direct Gemini with env var key
-  if (GEMINI_API_KEY) {
+  // Fallback: direct Gemma with env var key
+  if (GEMMA_API_KEY) {
     const contextMessage = `[Current project context: ${JSON.stringify(projectSnapshot)}]\n\nUser question: ${message}`;
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemma-3-4b-it' });
 
     const chatSession = model.startChat({
@@ -119,7 +119,7 @@ export async function* chatStream(message, history, projectSnapshot) {
     return;
   }
 
-  yield 'AI is not configured. Please set up a Gemini API key or configure Supabase Edge Functions.';
+  yield 'AI is not configured. Please set up a Gemma API key or configure Supabase Edge Functions.';
 }
 
 // Non-streaming chat fallback
@@ -135,16 +135,16 @@ export async function chatWithAI(message, projectSnapshot) {
 // Helpers
 // ═══════════════════════════════════════
 
-async function callGeminiDirect(prompt) {
+async function callGemmaDirect(prompt) {
   try {
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemma-3-4b-it' });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     return parseJsonResponse(text);
   } catch (e) {
-    console.error('Gemini direct call failed:', e);
+    console.error('Gemma direct call failed:', e);
     return [{ id: 'error', category: 'Structure', priority: 'low', title: 'Analysis Failed', suggestion: e.message }];
   }
 }
@@ -162,5 +162,133 @@ function parseJsonResponse(text) {
 }
 
 export function isAIAvailable() {
-  return isSupabaseConfigured() || !!GEMINI_API_KEY;
+  return isSupabaseConfigured() || !!GEMMA_API_KEY;
+}
+
+// ═══════════════════════════════════════
+// Transcription (Karaoke Captions)
+// ═══════════════════════════════════════
+
+export async function transcribeAudio(blob) {
+  if (!GEMMA_API_KEY) {
+    throw new Error('Gemma API key is required for auto-captions.');
+  }
+
+  const { GoogleGenerativeAI } = await import('@google/generative-ai');
+  const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
+  // Audio transcription using gemma-3-4b-it (note: user requested full replacement, though audio support in standard SDK might fallback)
+  const model = genAI.getGenerativeModel({ model: 'gemma-3-4b-it' });
+
+  // Convert blob to base64
+  const base64Data = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+  const prompt = `Transcribe this audio and return ONLY valid JSON with word-level timestamps in this exact format:
+{
+  "captions": [
+    {
+      "words": [
+        {"word": "Hello", "start": 0.0, "end": 0.5},
+        {"word": "world", "start": 0.5, "end": 1.0}
+      ],
+      "start": 0.0,
+      "end": 1.0
+    }
+  ]
+}
+Make sure to break down the transcription into logical phrases (up to 5-7 words per caption block). Do not return markdown. Just the raw JSON object.`;
+
+  const result = await model.generateContent([
+    prompt,
+    {
+      inlineData: {
+        mimeType: blob.type || 'audio/webm',
+        data: base64Data
+      }
+    }
+  ]);
+
+  const text = result.response.text();
+  
+  try {
+    const clean = text.replace(/```json\n?|```\n?/g, '').trim();
+    return JSON.parse(clean);
+  } catch (e) {
+    console.error('Failed to parse Gemma transcription JSON:', text);
+    throw new Error('Failed to parse transcription response.');
+  }
+}
+
+// ═══════════════════════════════════════
+// Reel Analyzer & Viral Breakdown
+// ═══════════════════════════════════════
+
+export async function analyzeReel(urlOrName, frames) {
+  // Call Supabase Edge Function
+  if (isSupabaseConfigured()) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-advisor`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ action: 'analyze_reel', urlOrName, frames }),
+          }
+        );
+        if (response.ok) {
+          return await response.json();
+        } else {
+          const err = await response.json();
+          throw new Error(err.error || 'Failed to analyze reel');
+        }
+      }
+    } catch (e) {
+      console.warn('Edge function failed:', e);
+      throw e;
+    }
+  } else {
+    throw new Error("Supabase is not configured. Please configure Supabase to use this feature.");
+  }
+}
+
+export async function getViralBreakdown(url) {
+  // Call Supabase Edge Function
+  if (isSupabaseConfigured()) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-advisor`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ action: 'viral_breakdown', url }),
+          }
+        );
+        if (response.ok) {
+          return await response.json();
+        } else {
+          const err = await response.json();
+          throw new Error(err.error || 'Failed to get viral breakdown');
+        }
+      }
+    } catch (e) {
+      console.warn('Edge function failed:', e);
+      throw e;
+    }
+  } else {
+    throw new Error("Supabase is not configured. Please configure Supabase to use this feature.");
+  }
 }

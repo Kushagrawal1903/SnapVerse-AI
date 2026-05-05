@@ -1,6 +1,6 @@
 // Supabase Edge Function: AI Advisor
 // Deploy with: supabase functions deploy ai-advisor
-// Set secret: supabase secrets set GEMINI_API_KEY=your_key
+// Set secret: supabase secrets set GEMMA_API_KEY=your_key
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -34,10 +34,10 @@ serve(async (req) => {
       });
     }
 
-    // Get Gemini API key from secrets
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not configured' }), {
+    // Get Gemma API key from secrets
+    const GEMMA_API_KEY = Deno.env.get('GEMMA_API_KEY');
+    if (!GEMMA_API_KEY) {
+      return new Response(JSON.stringify({ error: 'GEMMA_API_KEY not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -49,8 +49,8 @@ serve(async (req) => {
       // Non-streaming analysis
       const prompt = `${SYSTEM_PROMPT}\n\nAnalyze this reel project and return ONLY a valid JSON array of 3-6 improvement suggestions:\n\nProject: ${JSON.stringify(projectSnapshot)}\n\nReturn format: [{"id":"unique","category":"Category","priority":"high|medium|low","title":"Short Title","suggestion":"2-3 sentence actionable tip"}]`;
 
-      const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      const gemmaResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent?key=${GEMMA_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -61,7 +61,7 @@ serve(async (req) => {
         }
       );
 
-      const data = await geminiResponse.json();
+      const data = await gemmaResponse.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
 
       return new Response(text, {
@@ -89,8 +89,8 @@ serve(async (req) => {
         parts: [{ text: `[Project context: ${JSON.stringify(projectSnapshot)}]\n\n${message}` }],
       });
 
-      const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      const gemmaResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:streamGenerateContent?alt=sse&key=${GEMMA_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -103,7 +103,7 @@ serve(async (req) => {
       );
 
       // Stream the response
-      const reader = geminiResponse.body?.getReader();
+      const reader = gemmaResponse.body?.getReader();
       const encoder = new TextEncoder();
       const decoder = new TextDecoder();
 
@@ -145,6 +145,137 @@ serve(async (req) => {
           'Transfer-Encoding': 'chunked',
         },
       });
+    }
+
+    if (action === 'analyze_reel') {
+      const { frames, urlOrName } = await req.json();
+      
+      const parts = [
+        { text: `Analyze this short-form video reel (Title/URL: ${urlOrName}) and score it across these 6 dimensions.
+For each, give a score 0-100 and 2-3 specific, actionable improvements.
+Return ONLY valid JSON:
+{
+"overallScore": number,
+"scores": {
+"hook": { "score": number, "analysis": string, "fixes": string[] },
+"pacing": { "score": number, "analysis": string, "fixes": string[] },
+"audio": { "score": number, "analysis": string, "fixes": string[] },
+"visuals": { "score": number, "analysis": string, "fixes": string[] },
+"captions": { "score": number, "analysis": string, "fixes": string[] },
+"cta": { "score": number, "analysis": string, "fixes": string[] }
+},
+"viralPrediction": "low" | "medium" | "high" | "very_high",
+"topFix": string,
+"hook3SecondAnalysis": string,
+"bestMoment": { "timestamp": number, "reason": string }
+}` }
+      ];
+
+      // Add base64 frames if provided
+      if (frames && Array.isArray(frames)) {
+        for (const frame of frames) {
+          parts.push({
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: frame
+            }
+          });
+        }
+      }
+
+      const gemmaResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent?key=${GEMMA_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+          }),
+        }
+      );
+
+      const data = await gemmaResponse.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      
+      try {
+        const clean = text.replace(/```json\n?|```\n?/g, '').trim();
+        const parsed = JSON.parse(clean);
+        return new Response(JSON.stringify(parsed), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'Failed to parse AI response', raw: text }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    if (action === 'viral_breakdown') {
+      const { url } = await req.json();
+      
+      // Attempt to fetch URL metadata to give Gemini context
+      let metadata = '';
+      try {
+        // Since many platforms block direct scraping, we try a simple fetch or oEmbed if possible.
+        // For edge functions, a simple fetch might get basic meta tags.
+        const pageRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }});
+        if (pageRes.ok) {
+          const html = await pageRes.text();
+          const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+          const descMatch = html.match(/<meta[^>]*name="description"[^>]*content="([^"]*)"[^>]*>/i) || html.match(/<meta[^>]*content="([^"]*)"[^>]*name="description"[^>]*>/i);
+          
+          if (titleMatch) metadata += `Title: ${titleMatch[1]}\n`;
+          if (descMatch) metadata += `Description: ${descMatch[1]}\n`;
+        }
+      } catch (e) {
+        console.warn('Failed to fetch url metadata', e);
+      }
+
+      const prompt = `This is a viral short-form video URL: ${url}
+Context from page metadata (if any):
+${metadata || 'No metadata available.'}
+
+Reverse-engineer exactly why it works, or infer a viral template based on the URL context.
+Return JSON ONLY:
+{
+"hookType": string (e.g. "Question hook", "Shock value", "Tutorial promise"),
+"hookTiming": number (seconds),
+"cutRhythm": string,
+"averageClipLength": number,
+"audioAnalysis": string,
+"emotionalArc": string,
+"textStrategy": string,
+"whatToSteal": string[],
+"templateSteps": string[]
+}`;
+
+      const gemmaResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent?key=${GEMMA_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.6, maxOutputTokens: 2048 },
+          }),
+        }
+      );
+
+      const data = await gemmaResponse.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      
+      try {
+        const clean = text.replace(/```json\n?|```\n?/g, '').trim();
+        const parsed = JSON.parse(clean);
+        return new Response(JSON.stringify(parsed), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'Failed to parse AI response', raw: text }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     return new Response(JSON.stringify({ error: 'Invalid action' }), {

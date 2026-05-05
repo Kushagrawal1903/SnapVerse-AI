@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 
 const useUIStore = create((set) => ({
+  // Navigation
+  currentView: 'editor', // 'editor' | 'analyze' | 'breakdown'
+  setCurrentView: (view) => set({ currentView: view }),
+
   // Selection
   selectedClipIds: new Set(),
   clipboardClips: [],
@@ -12,6 +16,8 @@ const useUIStore = create((set) => ({
   snapToGrid: true,
   magneticTimeline: true,
   rippleEdit: false,
+  beatSync: false,
+  snapGuides: { x: null, y: null, active: false, type: null, value: null },
   
   // Rubber Band Selection
   rubberBand: { active: false, startX: 0, startY: 0, endX: 0, endY: 0 },
@@ -31,6 +37,9 @@ const useUIStore = create((set) => ({
   showClipProperties: false,
   showFilters: false,
   showAdjustments: false,
+  speedCurveClipId: null,
+  canvasMode: 'select', // 'select' | 'crop'
+  keyframedProperty: null, // e.g. 'scaleX', 'opacity'
   saveStatus: 'idle', // 'idle' | 'saving' | 'saved'
 
   // Actions
@@ -64,6 +73,8 @@ const useUIStore = create((set) => ({
   toggleSnap: () => set(s => ({ snapToGrid: !s.snapToGrid })),
   toggleMagnetic: () => set(s => ({ magneticTimeline: !s.magneticTimeline })),
   toggleRipple: () => set(s => ({ rippleEdit: !s.rippleEdit })),
+  toggleBeatSync: () => set(s => ({ beatSync: !s.beatSync })),
+  setSnapGuides: (guides) => set(s => ({ snapGuides: { ...s.snapGuides, ...guides } })),
   
   setActiveLeftTab: (tab) => set({ activeLeftTab: tab }),
   setShowExportModal: (v) => set({ showExportModal: v }),
@@ -77,6 +88,9 @@ const useUIStore = create((set) => ({
   setEditingTextClipId: (id) => set({ editingTextClipId: id }),
   setShowFilters: (v) => set({ showFilters: v }),
   setShowAdjustments: (v) => set({ showAdjustments: v }),
+  setSpeedCurveClipId: (id) => set({ speedCurveClipId: id }),
+  setCanvasMode: (mode) => set({ canvasMode: mode }),
+  setKeyframedProperty: (prop) => set({ keyframedProperty: prop }),
 }));
 
 export default useUIStore;

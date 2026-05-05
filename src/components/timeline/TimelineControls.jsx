@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import useProjectStore from '../../stores/useProjectStore';
 import useUIStore from '../../stores/useUIStore';
 
@@ -20,8 +20,29 @@ export default function TimelineControls() {
   const tracks = useProjectStore(s => s.tracks);
   const undo = useProjectStore(s => s.undo);
   const redo = useProjectStore(s => s.redo);
+  const addTrack = useProjectStore(s => s.addTrack);
+  const addClip = useProjectStore(s => s.addClip);
+
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const hasSelection = selectedClipIds.size > 0;
+
+  const handleAddAdjustmentLayer = () => {
+    // Find the first track that accepts video or create one?
+    // Let's just use the first video track.
+    const vTrack = tracks.find(t => t.accepts.includes('video') || t.accepts.includes('photo'));
+    if (vTrack) {
+      const id = addClip(vTrack.id, {
+        type: 'adjustment',
+        name: 'Adjustment Layer',
+        startTime: currentTime,
+        duration: 5,
+        filter: 'none', // can be updated via adjustments panel
+      });
+      useUIStore.getState().selectClip(id);
+      useUIStore.getState().setShowAdjustments(true);
+    }
+  };
 
   return (
     <div style={{
@@ -70,6 +91,42 @@ export default function TimelineControls() {
         style={{ opacity: hasSelection ? 1 : 0.4 }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+
+      <div style={{ width: 1, height: 20, background: 'var(--color-border)', margin: '0 4px' }} />
+
+      {/* Add Track & Adjustment Layer */}
+      <div style={{ position: 'relative' }}>
+        <button 
+          className="btn-secondary" 
+          style={{ fontSize: 11, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 4 }}
+          onClick={() => setShowAddMenu(!showAddMenu)}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Track
+        </button>
+        {showAddMenu && (
+          <div style={{
+            position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 50,
+            background: 'var(--color-bg-primary)', border: '1px solid var(--color-border)',
+            borderRadius: 6, padding: '4px', display: 'flex', flexDirection: 'column', gap: 2, minWidth: 120,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+          }}>
+            <button className="context-menu-item" onClick={() => { addTrack('video'); setShowAddMenu(false); }}>🎬 Video Track</button>
+            <button className="context-menu-item" onClick={() => { addTrack('audio'); setShowAddMenu(false); }}>🎵 Audio Track</button>
+            <button className="context-menu-item" onClick={() => { addTrack('text'); setShowAddMenu(false); }}>📝 Text Track</button>
+          </div>
+        )}
+      </div>
+
+      <button 
+        className="btn-secondary" 
+        style={{ fontSize: 11, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 4 }}
+        onClick={handleAddAdjustmentLayer}
+        title="Add Adjustment Layer to active track"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Adjustment Layer
       </button>
 
       <div style={{ width: 1, height: 20, background: 'var(--color-border)', margin: '0 4px' }} />
@@ -130,6 +187,20 @@ export default function TimelineControls() {
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
+
+      {/* Auto-Enhance */}
+      <button 
+        className="btn-primary tooltip" 
+        data-tooltip="Auto-Enhance Project"
+        onClick={() => {
+          const count = useProjectStore.getState().autoEnhanceProject();
+          alert(`Auto-enhanced applied ${count} improvements!`);
+        }}
+        style={{ fontSize: 11, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--color-accent-primary)', marginRight: 12 }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2.5 2.5l2 2"/><path d="M21.5 21.5l-2-2"/><path d="M2.5 21.5l2-2"/><path d="M21.5 2.5l-2 2"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/><circle cx="12" cy="12" r="5"/></svg>
+        Auto-Enhance
+      </button>
 
       {/* Zoom controls */}
       <button className="btn-icon" onClick={() => setTimelineZoom(timelineZoom - 3)} title="Zoom Out">

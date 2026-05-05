@@ -56,8 +56,45 @@ export const TEXT_PRESETS = [
 ];
 
 export const TEXT_ANIMATIONS = {
-  entrance: ['None', 'Fade In', 'Slide Up', 'Typewriter', 'Pop', 'Bounce'],
-  exit: ['None', 'Fade Out', 'Slide Down'],
+  entrance: {
+    'None': { type: 'entrance' },
+    'Fade In': { type: 'entrance', property: 'opacity', from: 0, to: 1 },
+    'Slide Up': { type: 'entrance', property: 'translateY', from: 40, to: 0 },
+    'Slide Down': { type: 'entrance', property: 'translateY', from: -40, to: 0 },
+    'Slide Left': { type: 'entrance', property: 'translateX', from: 60, to: 0 },
+    'Slide Right': { type: 'entrance', property: 'translateX', from: -60, to: 0 },
+    'Pop': { type: 'entrance', property: 'scale', from: 0.3, to: 1, easing: 'spring' },
+    'Bounce': { type: 'entrance', property: 'scale', from: 0, to: 1, easing: 'bounce' },
+    'Typewriter': { type: 'entrance', special: 'typewriter' },
+    'Word by Word': { type: 'entrance', special: 'wordByWord' },
+    'Glitch': { type: 'entrance', special: 'glitch' },
+    'Neon Glow': { type: 'entrance', special: 'neonGlow' },
+    'Rotate In': { type: 'entrance', property: 'rotation', from: -180, to: 0 },
+    'Zoom In': { type: 'entrance', property: 'scale', from: 2, to: 1 },
+    'Zoom Out': { type: 'entrance', property: 'scale', from: 0.5, to: 1 },
+    'Spin': { type: 'entrance', property: 'rotation', from: -360, to: 0 },
+    'Blur In': { type: 'entrance', special: 'blurIn' },
+    'Karaoke': { type: 'entrance', special: 'karaoke' },
+  },
+  exit: {
+    'None': { type: 'exit' },
+    'Fade Out': { type: 'exit', property: 'opacity', from: 1, to: 0 },
+    'Slide Out': { type: 'exit', property: 'translateY', from: 0, to: -40 },
+    'Pop Out': { type: 'exit', property: 'scale', from: 1, to: 0 },
+    'Slide Down': { type: 'exit', property: 'translateY', from: 0, to: 40 },
+    'Slide Left': { type: 'exit', property: 'translateX', from: 0, to: -60 },
+    'Slide Right': { type: 'exit', property: 'translateX', from: 0, to: 60 },
+    'Zoom Out': { type: 'exit', property: 'scale', from: 1, to: 2 },
+    'Blur Out': { type: 'exit', special: 'blurOut' },
+  },
+  loop: {
+    'None': { type: 'loop' },
+    'Pulse': { type: 'loop', property: 'scale', from: 0.95, to: 1.05, period: 0.8 },
+    'Float': { type: 'loop', property: 'translateY', from: 0, to: -8, period: 2 },
+    'Shake': { type: 'loop', special: 'shake', intensity: 3, period: 0.1 },
+    'Wave': { type: 'loop', special: 'wave' },
+    'Jiggle': { type: 'loop', property: 'rotation', from: -5, to: 5, period: 0.3 },
+  }
 };
 
 export const FONTS = ['Syne', 'DM Sans', 'IBM Plex Mono', 'Poppins', 'Bebas Neue', 'Playfair Display'];

@@ -42,6 +42,27 @@ export class AudioPlaybackManager {
     }
   }
 
+  getReversedBuffer(mediaId, originalBuffer) {
+    const revId = mediaId + '_reversed';
+    if (this.audioBuffers.has(revId)) return this.audioBuffers.get(revId);
+    
+    const ctx = getAudioContext();
+    const reversedBuffer = ctx.createBuffer(
+      originalBuffer.numberOfChannels,
+      originalBuffer.length,
+      originalBuffer.sampleRate
+    );
+    for (let i = 0; i < originalBuffer.numberOfChannels; i++) {
+      const dest = reversedBuffer.getChannelData(i);
+      const src = originalBuffer.getChannelData(i);
+      for (let j = 0; j < originalBuffer.length; j++) {
+        dest[j] = src[originalBuffer.length - 1 - j];
+      }
+    }
+    this.audioBuffers.set(revId, reversedBuffer);
+    return reversedBuffer;
+  }
+
   getMasterGain() {
     if (!this.masterGain) {
       const ctx = getAudioContext();
@@ -62,8 +83,14 @@ export class AudioPlaybackManager {
 
     const ctx = resumeAudioContext();
     const master = this.getMasterGain();
+    
+    const isSoloActive = tracks.some(t => t.solo);
 
     for (const track of tracks) {
+      const trackMuted = track.muted || (isSoloActive && !track.solo);
+      if (trackMuted) continue;
+      const trackVolume = (track.volume ?? 100) / 100;
+
       for (const clip of track.clips) {
         if (clip.type !== 'audio') continue;
 
@@ -76,40 +103,78 @@ export class AudioPlaybackManager {
 
         if (currentTime >= clipEnd || currentTime < clipStart) continue;
 
-        const buffer = this.audioBuffers.get(clip.mediaId);
+        let buffer = this.audioBuffers.get(clip.mediaId);
         if (!buffer) continue;
+
+        if (clip.reversed) {
+          buffer = this.getReversedBuffer(clip.mediaId, buffer);
+        }
 
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.playbackRate.value = clip.speed || 1;
-
-        const gainNode = ctx.createGain();
-        const volume = (clip.volume || 100) / 100;
-
-        // Fade in / out
-        const clipTime = currentTime - clipStart;
-        const fadeIn = clip.fadeIn || 0;
-        const fadeOut = clip.fadeOut || 0;
-
-        if (fadeIn > 0 && clipTime < fadeIn) {
-          gainNode.gain.setValueAtTime(0, ctx.currentTime);
-          gainNode.gain.linearRampToValueAtTime(volume, ctx.currentTime + (fadeIn - clipTime));
-        } else {
-          gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+        
+        if (clip.pitchCorrection) {
+          source.detune.value = -1200 * Math.log2(clip.speed || 1);
         }
 
-        if (fadeOut > 0) {
-          const timeUntilEnd = effectiveDuration - clipTime;
-          if (timeUntilEnd > fadeOut) {
-            gainNode.gain.setValueAtTime(volume, ctx.currentTime + timeUntilEnd - fadeOut);
+        const gainNode = ctx.createGain();
+        const trackVolScale = trackVolume;
+        const clipTime = currentTime - clipStart;
+
+        if (clip.volumeAutomation && clip.volumeKeyframes?.length > 0) {
+          // Calculate interpolated starting volume
+          let startVol = clip.volumeKeyframes[0].volume;
+          for (let i = 0; i < clip.volumeKeyframes.length - 1; i++) {
+            const kf1 = clip.volumeKeyframes[i];
+            const kf2 = clip.volumeKeyframes[i + 1];
+            if (clipTime >= kf1.time && clipTime <= kf2.time) {
+              const t = (clipTime - kf1.time) / (kf2.time - kf1.time);
+              startVol = kf1.volume + t * (kf2.volume - kf1.volume);
+              break;
+            } else if (clipTime > kf2.time) {
+              startVol = kf2.volume;
+            }
           }
-          gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + timeUntilEnd);
+          
+          gainNode.gain.setValueAtTime((startVol / 100) * trackVolScale, ctx.currentTime);
+          
+          // Schedule upcoming keyframes
+          clip.volumeKeyframes.forEach(kf => {
+            if (kf.time > clipTime && kf.time <= effectiveDuration) {
+              gainNode.gain.linearRampToValueAtTime((kf.volume / 100) * trackVolScale, ctx.currentTime + (kf.time - clipTime));
+            }
+          });
+        } else {
+          const volume = ((clip.volume ?? 100) / 100) * trackVolScale;
+          const fadeIn = clip.fadeIn || 0;
+          const fadeOut = clip.fadeOut || 0;
+
+          if (fadeIn > 0 && clipTime < fadeIn) {
+            gainNode.gain.setValueAtTime(0, ctx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(volume, ctx.currentTime + (fadeIn - clipTime));
+          } else {
+            gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+          }
+
+          if (fadeOut > 0) {
+            const timeUntilEnd = effectiveDuration - clipTime;
+            if (timeUntilEnd > fadeOut) {
+              gainNode.gain.setValueAtTime(volume, ctx.currentTime + timeUntilEnd - fadeOut);
+            }
+            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + timeUntilEnd);
+          }
         }
 
         source.connect(gainNode);
         gainNode.connect(master);
 
-        const offset = (clip.trimIn || 0) + clipTime * (clip.speed || 1);
+        let offset;
+        if (clip.reversed) {
+          offset = (clip.trimOut || 0) + clipTime * (clip.speed || 1);
+        } else {
+          offset = (clip.trimIn || 0) + clipTime * (clip.speed || 1);
+        }
         const remainingDuration = (effectiveDuration - clipTime) / (clip.speed || 1);
 
         try {
@@ -188,4 +253,31 @@ export function detectBPM(audioBuffer) {
   const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
   const bpm = Math.round(60 / avgInterval);
   return Math.max(60, Math.min(200, bpm));
+}
+
+export async function detectBeats(audioBuffer) {
+  const data = audioBuffer.getChannelData(0);
+  const sampleRate = audioBuffer.sampleRate;
+  const beats = [];
+  const windowSize = Math.floor(sampleRate * 0.1); // 100ms window
+  let localEnergies = [];
+  
+  for (let i = 0; i < data.length - windowSize; i += windowSize / 2) {
+    const energy = Array.from(data.slice(i, i + windowSize))
+      .reduce((sum, v) => sum + v * v, 0) / windowSize;
+    localEnergies.push({ time: i / sampleRate, energy });
+  }
+  
+  const avgEnergy = localEnergies.reduce((sum, el) => sum + el.energy, 0) / localEnergies.length;
+  const threshold = avgEnergy * 1.5;
+  
+  let lastBeatTime = 0;
+  for (const el of localEnergies) {
+    if (el.energy > threshold && (el.time - lastBeatTime > 0.3)) { // Min 300ms between beats
+      beats.push(el.time);
+      lastBeatTime = el.time;
+    }
+  }
+  
+  return beats;
 }

@@ -5,6 +5,7 @@ import { CanvasEngine } from '../../services/canvasEngine';
 import { ASPECT_RATIOS } from '../../utils/constants';
 import PlaybackControls from './PlaybackControls';
 import CanvasToolbar from './CanvasToolbar';
+import CanvasOverlay from './CanvasOverlay';
 
 export default function CanvasPreview() {
   const canvasRef = useRef(null);
@@ -63,13 +64,15 @@ export default function CanvasPreview() {
   return (
     <>
       <CanvasToolbar />
-      <div className="canvas-wrapper" style={{ width: ar.displayW, height: ar.displayH }}>
+      <div className="canvas-wrapper" style={{ width: ar.displayW, height: ar.displayH, position: 'relative' }}>
         <canvas
+          id="main-preview-canvas"
           ref={canvasRef}
           width={ar.displayW}
           height={ar.displayH}
           style={{ display: 'block', width: '100%', height: '100%', background: '#000' }}
         />
+        <CanvasOverlay />
       </div>
       <PlaybackControls />
     </>

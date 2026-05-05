@@ -11,6 +11,9 @@ import KeyboardShortcutsModal from './components/shared/KeyboardShortcutsModal';
 import ContextMenu from './components/shared/ContextMenu';
 import AuthModal from './components/auth/AuthModal';
 import ClipPropertiesPanel from './components/timeline/ClipPropertiesPanel';
+import SpeedCurvePanel from './components/timeline/SpeedCurvePanel';
+import ReelAnalyzer from './components/ai/ReelAnalyzer';
+import ViralBreakdown from './components/ai/ViralBreakdown';
 import useUIStore from './stores/useUIStore';
 import useProjectStore from './stores/useProjectStore';
 import useAuthStore from './stores/useAuthStore';
@@ -26,6 +29,7 @@ export default function App() {
   const showFilters = useUIStore(s => s.showFilters);
   const showAdjustments = useUIStore(s => s.showAdjustments);
   const selectedClipIds = useUIStore(s => s.selectedClipIds);
+  const currentView = useUIStore(s => s.currentView);
   const tracks = useProjectStore(s => s.tracks);
 
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
@@ -167,18 +171,26 @@ export default function App() {
     <div className="app-layout">
       <TopBar />
       
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}>
-        <EditorLayout />
-        
-        {/* Floating panels */}
-        {showFilters && <FiltersPanel />}
-        {showAdjustments && <AdjustmentsPanel />}
-        {selectedClip?.type === 'text' && <TextEditor />}
-        {selectedClip?.type === 'audio' && <AudioControls />}
-        <ClipPropertiesPanel />
-      </div>
+      {currentView === 'editor' && (
+        <>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}>
+            <EditorLayout />
+            
+            {/* Floating panels */}
+            {showFilters && <FiltersPanel />}
+            {showAdjustments && <AdjustmentsPanel />}
+            {selectedClip?.type === 'text' && <TextEditor />}
+            {selectedClip?.type === 'audio' && <AudioControls />}
+            <ClipPropertiesPanel />
+            <SpeedCurvePanel />
+          </div>
 
-      <TimelinePanel />
+          <TimelinePanel />
+        </>
+      )}
+
+      {currentView === 'analyze' && <ReelAnalyzer />}
+      {currentView === 'breakdown' && <ViralBreakdown />}
 
       {/* Modals */}
       {showExportModal && <ExportModal />}
