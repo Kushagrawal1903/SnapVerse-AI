@@ -62,6 +62,26 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  // Google OAuth sign in
+  signInWithGoogle: async () => {
+    if (!isSupabaseConfigured()) return;
+    set({ isLoading: true, error: null });
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+      // OAuth flow will redirect, so we don't set state here
+      // The auth state change listener in App.jsx will handle the result
+    } catch (err) {
+      set({ isLoading: false, error: err.message });
+      throw err;
+    }
+  },
+
   // Sign out
   signOut: async () => {
     if (!isSupabaseConfigured()) return;

@@ -11,6 +11,7 @@ export default function AuthModal() {
 
   const signIn = useAuthStore(s => s.signIn);
   const signUp = useAuthStore(s => s.signUp);
+  const signInWithGoogle = useAuthStore(s => s.signInWithGoogle);
   const isLoading = useAuthStore(s => s.isLoading);
   const error = useAuthStore(s => s.error);
   const clearError = useAuthStore(s => s.clearError);
@@ -46,6 +47,15 @@ export default function AuthModal() {
         await signIn(email, password);
       } catch {}
     }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLocalError('');
+    setSuccess('');
+    clearError();
+    try {
+      await signInWithGoogle();
+    } catch {}
   };
 
   const switchMode = () => {
@@ -188,6 +198,61 @@ export default function AuthModal() {
               )}
             </button>
           </form>
+
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--color-outline-variant)' }}></div>
+            <span style={{ margin: '0 12px', fontSize: 12, color: 'var(--color-text-muted)' }}>OR</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--color-outline-variant)' }}></div>
+          </div>
+
+          {/* Google OAuth Button */}
+          <button
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              padding: '12px 0',
+              fontSize: 14,
+              backgroundColor: 'white',
+              border: '1px solid var(--color-outline-variant)',
+              borderRadius: 'var(--radius-default)',
+              color: 'var(--color-text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.7 : 1,
+              transition: 'all 0.2s',
+              fontWeight: 500,
+            }}
+            onMouseEnter={(e) => {
+              if (!isLoading) {
+                e.target.style.backgroundColor = 'var(--color-surface-container-lowest)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isLoading) {
+                e.target.style.backgroundColor = 'white';
+              }
+            }}
+          >
+            {isLoading ? (
+              <div style={{ width: 16, height: 16, border: '2px solid var(--color-text-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+            ) : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                  <path fill="#4285F4" d="M16.51 9.2c0-.6-.05-1.2-.15-1.8H9v3.4h4.1c-.2 1-.7 1.8-1.5 2.4v2.2h2.4c1.4-1.3 2.2-3.2 2.2-5.2z"/>
+                  <path fill="#34A853" d="M9 17c2 0 3.6-.7 4.8-1.8l-2.4-2.2c-.7.5-1.5.7-2.4.7-1.8 0-3.4-1.2-3.9-2.9H2.6v2.3C3.8 15.5 6.2 17 9 17z"/>
+                  <path fill="#FBBC05" d="M5.1 10.8c-.1-.4-.2-.8-.2-1.3s.1-.9.2-1.3V6H2.6C2.2 6.8 2 7.8 2 8.8s.2 2 .6 2.8l2.5-1.8z"/>
+                  <path fill="#EA4335" d="M9 3.8c1 0 1.9.3 2.6.9l2.1-2.1C12.6 1.5 11 1 9 1 6.2 1 3.8 2.5 2.6 4.8l2.5 2.3c.5-1.7 2.1-2.9 3.9-2.9z"/>
+                </svg>
+                Continue with Google
+              </>
+            )}
+          </button>
 
           {/* Footer */}
           <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--color-text-muted)', marginTop: 20 }}>
