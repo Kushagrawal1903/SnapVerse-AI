@@ -42,6 +42,10 @@ export async function exportVideo(
   cancelledRef
 ) {
   const ffmpeg = await loadFFmpeg();
+  if (!canvas) throw new Error('Export canvas is unavailable.');
+  if (!Array.isArray(tracks) || tracks.length === 0) throw new Error('No timeline tracks found.');
+  if (!duration || duration <= 0) throw new Error('Project duration must be greater than 0.');
+  if (!fps || fps <= 0) throw new Error('Invalid export FPS.');
 
   const totalFrames = Math.ceil(duration * fps);
   const crf = quality === 'High' ? 18 : quality === 'Standard' ? 23 : 28;
@@ -55,6 +59,7 @@ export async function exportVideo(
 
     // Capture frame as JPEG
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+    if (!blob) throw new Error('Failed to render frame data.');
     const frameData = new Uint8Array(await blob.arrayBuffer());
     const frameName = `frame_${String(frame).padStart(6, '0')}.jpg`;
     await ffmpeg.writeFile(frameName, frameData);
@@ -151,6 +156,9 @@ export async function exportVideo(
 
   // Read output
   const outputData = await ffmpeg.readFile('output.mp4');
+  if (!outputData || outputData.length === 0) {
+    throw new Error('FFmpeg produced an empty export file.');
+  }
   const blob = new Blob([outputData], { type: 'video/mp4' });
 
   // Cleanup

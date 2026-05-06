@@ -5,6 +5,7 @@ import EditorPage from './pages/EditorPage';
 import AnalyzePage from './pages/AnalyzePage';
 import BreakdownPage from './pages/BreakdownPage';
 import ExportView from './components/export/ExportView';
+import ExportModal from './components/export/ExportModal';
 import KeyboardShortcutsModal from './components/shared/KeyboardShortcutsModal';
 import ContextMenu from './components/shared/ContextMenu';
 import ToastContainer from './components/shared/ToastContainer';
@@ -48,7 +49,7 @@ function AppShell() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {showExportModal && <ExportView />}
+      {showExportModal && <ExportModal />}
       {showShortcutsModal && <KeyboardShortcutsModal />}
       <ContextMenu />
       <ContextualTip />

@@ -34,6 +34,8 @@ export default function ExportView() {
     return mb > 1024 ? `${(mb/1024).toFixed(1)} GB` : `~${mb.toFixed(1)} MB`;
   };
 
+  const resolveMediaSource = (media) => media?.objectUrl || media?.fileUrl || null;
+
   const handleExport = async () => {
     setIsExporting(true);
     setProgress(0);
@@ -50,20 +52,26 @@ export default function ExportView() {
       setStage('Preparing canvas...');
       setProgress(10);
       const state = useProjectStore.getState();
+      if (!state?.tracks?.length || !state.tracks.some(t => t.clips?.length > 0)) {
+        throw new Error('Add clips to the timeline before exporting.');
+      }
       const renderCanvas = document.createElement('canvas');
       renderCanvas.width = preset.width;
       renderCanvas.height = preset.height;
       const engine = new CanvasEngine(renderCanvas);
+      let registeredVisualMedia = 0;
 
       for (const track of state.tracks) {
         for (const clip of track.clips) {
           if (!clip.mediaId) continue;
           const media = state.mediaItems.find(m => m.id === clip.mediaId);
-          if (!media?.objectUrl) continue;
+          const mediaSrc = resolveMediaSource(media);
+          if (!mediaSrc) continue;
 
           if (media.type === 'video') {
             const video = document.createElement('video');
-            video.src = media.objectUrl;
+            video.crossOrigin = 'anonymous';
+            video.src = mediaSrc;
             video.muted = true;
             video.preload = 'auto';
             video.playsInline = true;
@@ -74,17 +82,23 @@ export default function ExportView() {
               setTimeout(resolve, 3000);
             });
             engine.registerMedia(media.id, video);
+            registeredVisualMedia += 1;
           } else if (media.type === 'photo') {
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            img.src = media.objectUrl;
+            img.src = mediaSrc;
             await new Promise((resolve) => {
               img.onload = resolve;
               img.onerror = resolve;
             });
             engine.registerMedia(media.id, img);
+            registeredVisualMedia += 1;
           }
         }
+      }
+
+      if (registeredVisualMedia === 0) {
+        throw new Error('No renderable media found. Re-add media and try export again.');
       }
 
       if (cancelledRef.current) return;
@@ -125,6 +139,7 @@ export default function ExportView() {
       setProgress(100);
       setStage('Complete!');
       setExportResult({ size: (blob.size / (1024 * 1024)).toFixed(1), fileName });
+      setIsExporting(false);
       showToast('Export complete! File downloaded.', 'success', 4000);
       engine.destroy();
     } catch (err) {

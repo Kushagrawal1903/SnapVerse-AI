@@ -63,13 +63,11 @@ export default function AuthModal() {
         <div style={{ padding: '32px 32px 28px' }}>
           {/* Logo */}
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginBottom: 8 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--color-text-primary)' }}>
-                Snap
-              </span>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--color-accent-primary)' }}>
-                Verse
-              </span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 20, marginBottom: 8 }}>
+              <img src="/logo.png" alt="SnapVerse" style={{ height: 48 }} />
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--color-text-primary)' }}>
+                SnapVerse
+              </div>
             </div>
             <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
               AI-powered reel editor

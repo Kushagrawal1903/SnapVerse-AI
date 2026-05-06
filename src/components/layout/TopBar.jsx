@@ -56,9 +56,7 @@ export default function TopBar() {
           onClick={() => setCurrentView('dashboard')}
           className="flex items-center gap-1 cursor-pointer group"
         >
-          <span className="font-display font-bold text-xl text-primary group-hover:text-surface-tint transition-colors">
-            SnapVerse
-          </span>
+          <img src="/logo.png" alt="SnapVerse" className="h-8 w-auto" />
         </div>
         
         <div className="w-px h-6 bg-outline-variant"></div>
