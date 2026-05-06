@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Export &amp; Preview Modal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=Space+Grotesk:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#414755",
+                    "outline-variant": "#c1c6d7",
+                    "surface-container-lowest": "#ffffff",
+                    "inverse-surface": "#2f3034",
+                    "surface-container-low": "#f4f3f8",
+                    "inverse-on-surface": "#f1f0f5",
+                    "on-surface": "#1a1b1f",
+                    "on-primary-container": "#fefcff",
+                    "primary-fixed": "#d8e2ff",
+                    "on-secondary-fixed-variant": "#3631b4",
+                    "primary-fixed-dim": "#adc6ff",
+                    "error-container": "#ffdad6",
+                    "surface-container-highest": "#e3e2e7",
+                    "secondary": "#4c4aca",
+                    "secondary-container": "#6664e4",
+                    "secondary-fixed-dim": "#c2c1ff",
+                    "on-tertiary-fixed": "#351000",
+                    "outline": "#717786",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed": "#e2dfff",
+                    "surface-dim": "#dad9df",
+                    "on-secondary": "#ffffff",
+                    "primary": "#0058bc",
+                    "surface-bright": "#faf9fe",
+                    "surface-variant": "#e3e2e7",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#c64f00",
+                    "on-error": "#ffffff",
+                    "surface": "#faf9fe",
+                    "tertiary-fixed-dim": "#ffb595",
+                    "on-secondary-fixed": "#0c006a",
+                    "surface-container": "#eeedf3",
+                    "on-primary-fixed-variant": "#004493",
+                    "on-background": "#1a1b1f",
+                    "inverse-primary": "#adc6ff",
+                    "tertiary": "#9e3d00",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#005bc1",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#ffdbcc",
+                    "on-tertiary-fixed-variant": "#7c2e00",
+                    "primary-container": "#0070eb",
+                    "on-tertiary-container": "#fffbff",
+                    "background": "#faf9fe",
+                    "surface-container-high": "#e9e7ed",
+                    "on-secondary-container": "#fffbff",
+                    "on-primary-fixed": "#001a41"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "margin-page": "24px",
+                    "stack-md": "16px",
+                    "stack-sm": "8px",
+                    "panel-padding": "16px",
+                    "gutter": "12px"
+            },
+            "fontFamily": {
+                    "h1": [
+                            "Inter"
+                    ],
+                    "display": [
+                            "Inter"
+                    ],
+                    "mono-label": [
+                            "Space Grotesk"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "h2": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "h1": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "mono-label": [
+                            "11px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "h2": [
+                            "20px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.02em",
+                                    "fontWeight": "500"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+</head>
+<body class="bg-surface-container-low min-h-screen flex items-center justify-center p-4">
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 bg-inverse-surface/30 backdrop-blur-[12px] z-40"></div>
+<!-- Modal Container -->
+<div class="relative z-50 w-full max-w-6xl bg-surface-container-lowest rounded-xl shadow-[0_12px_24px_rgba(0,0,0,0.1)] border border-outline-variant flex flex-col md:flex-row overflow-hidden max-h-[921px]">
+<!-- Left: Video Preview Area -->
+<div class="flex-1 bg-surface-container-high relative flex flex-col border-b md:border-b-0 md:border-r border-outline-variant">
+<!-- Preview Header -->
+<div class="flex items-center justify-between p-stack-md bg-surface-container-lowest/80 backdrop-blur-md absolute top-0 w-full z-10 border-b border-outline-variant">
+<span class="font-mono-label text-mono-label text-on-surface-variant uppercase">Preview: Project Alpha_v2</span>
+<div class="flex gap-2">
+<button class="p-1 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="fullscreen">fullscreen</span>
+</button>
+</div>
+</div>
+<!-- Video Player Mockup -->
+<div class="flex-1 flex items-center justify-center bg-black overflow-hidden relative">
+<img alt="Video Preview" class="w-full h-full object-cover opacity-90" data-alt="A high-quality, cinematic landscape shot of a rugged mountain range at golden hour. The sky is a gradient of deep blues and warm oranges, with sharp peaks catching the fading light. This scene represents a premium video asset being previewed in a high-end editing software suite. The lighting is dramatic yet natural, fitting a pro-light modern UI aesthetic where the video is the sole vibrant focus against a sleek, minimalist interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7oqmCd0GbL1xEvvS_sDPOac5WH9t244r3jEK_-Ovi0XV3rTQXg4pwNO3bR3bDrKwbpAFvUjDjs7eAxwq88u48rHix3NE5EtYrSbFrL39GToc-tF8vXsx6fMTptdE_UNi1obePywUrKgQC8M8v3GoTpqPCWTYeIoRSVyvhqOf8kzR7eBOypnBYx4ffnQLZ36IJtmToinDCqhqI5meHDhyhHNaMUrmreontlxSviRQ7h6oriEFzQVcqw-RoEYu-YIAVf0SSssAk2WE"/>
+<!-- Play Button Overlay -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-16 h-16 rounded-full bg-surface-container-lowest/20 backdrop-blur-md flex items-center justify-center border border-surface-container-lowest/30">
+<span class="material-symbols-outlined text-[32px] text-surface-container-lowest" data-icon="play_arrow" data-weight="fill">play_arrow</span>
+</div>
+</div>
+<!-- Playback Controls -->
+<div class="absolute bottom-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center gap-4">
+<button class="text-surface-container-lowest hover:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined" data-icon="play_arrow" data-weight="fill">play_arrow</span>
+</button>
+<!-- Timeline Scrubber -->
+<div class="flex-1 h-1 bg-surface-container-lowest/30 rounded-full relative cursor-pointer group">
+<div class="absolute h-full w-[45%] bg-primary rounded-full"></div>
+<div class="absolute top-1/2 -translate-y-1/2 left-[45%] w-3 h-3 bg-surface-container-lowest rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"></div>
+</div>
+<span class="font-mono-label text-mono-label text-surface-container-lowest">01:24 / 03:10</span>
+</div>
+</div>
+</div>
+<!-- Right: Settings Panel -->
+<div class="w-full md:w-[360px] bg-surface-container-lowest flex flex-col h-full overflow-y-auto">
+<!-- Panel Header -->
+<div class="p-stack-md border-b border-outline-variant flex items-center justify-between sticky top-0 bg-surface-container-lowest z-10">
+<h2 class="font-h2 text-h2 text-on-surface">Export Settings</h2>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<!-- Settings Content -->
+<div class="p-stack-md flex-1 flex flex-col gap-stack-md">
+<!-- Format Selection -->
+<div class="space-y-stack-sm">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Format</label>
+<div class="grid grid-cols-2 gap-unit">
+<button class="py-2 px-3 border-2 border-primary bg-primary-fixed/20 text-primary font-body-md text-body-md rounded-lg text-center transition-colors">
+                            MP4 (H.264)
+                        </button>
+<button class="py-2 px-3 border border-outline-variant text-on-surface hover:bg-surface-container-low font-body-md text-body-md rounded-lg text-center transition-colors">
+                            MOV (ProRes)
+                        </button>
+</div>
+</div>
+<!-- Resolution Selection -->
+<div class="space-y-stack-sm">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Resolution</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low border border-outline-variant text-on-surface font-body-md text-body-md rounded-lg px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+<option value="1080">1080p Full HD (1920x1080)</option>
+<option selected="" value="4k">4K UHD (3840x2160)</option>
+<option value="720">720p HD (1280x720)</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Frame Rate Selection -->
+<div class="space-y-stack-sm">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Frame Rate</label>
+<div class="flex gap-unit">
+<button class="flex-1 py-1 px-2 border border-outline-variant text-on-surface hover:bg-surface-container-low font-body-md text-body-md rounded text-center transition-colors">
+                            24 fps
+                        </button>
+<button class="flex-1 py-1 px-2 border-2 border-primary bg-primary-fixed/20 text-primary font-body-md text-body-md rounded text-center transition-colors">
+                            30 fps
+                        </button>
+<button class="flex-1 py-1 px-2 border border-outline-variant text-on-surface hover:bg-surface-container-low font-body-md text-body-md rounded text-center transition-colors">
+                            60 fps
+                        </button>
+</div>
+</div>
+<!-- Divider -->
+<div class="h-px w-full bg-outline-variant/50 my-2"></div>
+<!-- AI Feature Toggle -->
+<div class="flex items-start justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">AI Smart Upscaling</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant max-w-[200px]">Enhance details and reduce noise during export. Adds processing time.</span>
+</div>
+<!-- Toggle Switch Mockup (Active) -->
+<div class="w-10 h-6 bg-gradient-to-r from-primary to-secondary rounded-full relative cursor-pointer shadow-inner shrink-0 mt-1">
+<div class="w-4 h-4 bg-surface-container-lowest rounded-full absolute right-1 top-1 shadow-sm transition-transform"></div>
+</div>
+</div>
+</div>
+<!-- Footer / Actions -->
+<div class="p-stack-md border-t border-outline-variant bg-surface-container-lowest flex flex-col gap-4 sticky bottom-0">
+<!-- Estimate Info -->
+<div class="flex justify-between items-center bg-surface-container-low p-2 rounded border border-outline-variant/50">
+<div class="flex flex-col">
+<span class="font-mono-label text-mono-label text-on-surface-variant uppercase">Est. File Size</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">~1.2 GB</span>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="flex flex-col text-right">
+<span class="font-mono-label text-mono-label text-on-surface-variant uppercase">Duration</span>
+<span class="font-body-md text-body-md text-on-surface">03:10</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-3 mt-2">
+<button class="flex-1 py-2 px-4 border border-primary text-primary font-body-md text-body-md font-medium rounded-lg hover:bg-primary-fixed/10 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="share">share</span>
+                        Share
+                    </button>
+<button class="flex-[2] py-2 px-4 bg-primary text-on-primary font-body-md text-body-md font-medium rounded-lg hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+                        Export Video
+                    </button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

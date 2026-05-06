@@ -8,7 +8,6 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 export default function TopBar() {
   const projectName = useProjectStore(s => s.projectName);
   const setProjectName = useProjectStore(s => s.setProjectName);
-  const setShowExportModal = useUIStore(s => s.setShowExportModal);
   const setShowShortcutsModal = useUIStore(s => s.setShowShortcutsModal);
   const saveStatus = useUIStore(s => s.saveStatus);
   const currentView = useUIStore(s => s.currentView);
@@ -40,118 +39,97 @@ export default function TopBar() {
   };
 
   return (
-    <header className="topbar">
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: 'var(--color-text-primary)' }}>
-            Snap
-          </span>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: 'var(--color-accent-primary)' }}>
-            Verse
+    <nav className="flex justify-between items-center px-4 h-14 bg-surface border-b border-outline-variant shrink-0 relative z-20 shadow-sm">
+      {/* Logo & Project Name */}
+      <div className="flex items-center gap-4">
+        <div 
+          onClick={() => setCurrentView('dashboard')}
+          className="flex items-center gap-1 cursor-pointer group"
+        >
+          <span className="font-display font-bold text-xl text-primary group-hover:text-surface-tint transition-colors">
+            SnapVerse
           </span>
         </div>
-        <div style={{ width: 1, height: 24, background: 'var(--color-border)' }} />
-        <input
-          type="text"
-          value={projectName}
-          onChange={(e) => setProjectName(e.target.value)}
-          style={{
-            border: 'none', background: 'transparent', fontFamily: 'var(--font-body)',
-            fontSize: 14, fontWeight: 500, color: 'var(--color-text-primary)',
-            outline: 'none', padding: '4px 8px', borderRadius: 6, width: 200,
-            transition: 'background 0.15s',
-          }}
-          onFocus={(e) => e.target.style.background = 'var(--color-bg-surface)'}
-          onBlur={(e) => e.target.style.background = 'transparent'}
-        />
-        {/* Save status indicator */}
-        <SaveIndicator />
+        
+        <div className="w-px h-6 bg-outline-variant"></div>
+        
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            className="bg-transparent border-none font-body-md text-sm font-semibold text-on-surface hover:bg-surface-container-lowest focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary rounded px-2 py-1 outline-none transition-all w-48 truncate"
+          />
+          <SaveIndicator />
+        </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-bg-surface)', padding: 4, borderRadius: 8, gap: 4 }}>
+      {/* Center Navigation */}
+      <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex bg-surface-container-low p-1 rounded-lg border border-outline-variant shadow-sm">
         {['editor', 'analyze', 'breakdown'].map(view => (
           <button
             key={view}
             onClick={() => setCurrentView(view)}
-            style={{
-              padding: '6px 16px',
-              border: 'none',
-              background: currentView === view ? 'var(--color-bg-secondary)' : 'transparent',
-              color: currentView === view ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: 'var(--font-display)',
-              cursor: 'pointer',
-              textTransform: 'capitalize',
-              boxShadow: currentView === view ? 'var(--shadow-sm)' : 'none',
-              transition: 'all 0.2s',
-            }}
+            className={`px-4 py-1.5 rounded-md font-label-sm transition-all duration-200 capitalize ${
+              currentView === view 
+                ? 'bg-surface text-primary shadow-sm border border-outline-variant' 
+                : 'text-on-surface-variant hover:text-on-surface'
+            }`}
           >
             {view === 'editor' ? 'Editor' : view === 'analyze' ? 'Reel Analyzer' : 'Viral Breakdown'}
           </button>
         ))}
       </div>
 
-      {/* Right actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Right Actions */}
+      <div className="flex items-center gap-2">
         <button
-          className="btn-icon tooltip"
-          data-tooltip="Keyboard Shortcuts"
+          className="w-8 h-8 rounded hover:bg-surface-container-low flex items-center justify-center text-on-surface-variant transition-colors"
+          title="Keyboard Shortcuts"
           onClick={() => setShowShortcutsModal(true)}
-          style={{ fontSize: 16 }}
         >
-          ?
+          <span className="material-symbols-outlined text-[20px]">keyboard</span>
         </button>
-        <button className="btn-outline" onClick={handleSave}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          Save
+
+        <button 
+          className="px-3 py-1.5 rounded-lg border border-outline-variant font-label-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-1 shadow-sm"
+          onClick={handleSave}
+        >
+          <span className="material-symbols-outlined text-[16px]">save</span> Save
         </button>
-        <button className="btn-export" onClick={() => setShowExportModal(true)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export
+
+        <button 
+          className="px-4 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm font-medium hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-1 shadow-sm"
+          onClick={() => setCurrentView('export')}
+        >
+          <span className="material-symbols-outlined text-[16px]">ios_share</span> Export
         </button>
 
         {/* User menu */}
         {user && (
-          <div ref={menuRef} style={{ position: 'relative', marginLeft: 4 }}>
+          <div ref={menuRef} className="relative ml-2">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: 'var(--color-accent-primary)', color: 'white',
-                border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--font-display)',
-              }}
+              className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container font-display font-bold text-sm flex items-center justify-center cursor-pointer border border-primary/20 hover:scale-105 transition-transform"
               title={user.email}
             >
               {(user.email || 'U')[0].toUpperCase()}
             </button>
+            
             {showMenu && (
-              <div style={{
-                position: 'absolute', top: '100%', right: 0, marginTop: 6,
-                background: 'white', borderRadius: 'var(--radius-card)',
-                boxShadow: 'var(--shadow-strong)', border: '1px solid var(--color-border)',
-                padding: 4, minWidth: 200, zIndex: 100, animation: 'fadeIn 0.15s ease-out',
-              }}>
-                <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--color-border)', marginBottom: 4 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                    {user.email}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                    {isSupabaseConfigured() ? 'Cloud Mode' : 'Local Mode'}
+              <div className="absolute top-full right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-lg p-2 min-w-[200px] z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="px-3 py-2 border-b border-outline-variant mb-1">
+                  <div className="text-sm font-semibold text-on-surface truncate">{user.email}</div>
+                  <div className="text-[10px] text-outline font-mono-label mt-1">
+                    {isSupabaseConfigured() ? 'CLOUD SYNC ACTIVE' : 'LOCAL MODE ONLY'}
                   </div>
                 </div>
                 {isSupabaseConfigured() && (
                   <button
-                    className="context-menu-item"
+                    className="w-full text-left px-3 py-2 text-sm text-error hover:bg-error-container hover:text-on-error-container rounded-lg transition-colors flex items-center gap-2"
                     onClick={() => { signOut(); setShowMenu(false); }}
-                    style={{ color: '#e74c3c' }}
                   >
-                    Sign Out
+                    <span className="material-symbols-outlined text-[18px]">logout</span> Sign Out
                   </button>
                 )}
               </div>
@@ -159,7 +137,7 @@ export default function TopBar() {
           </div>
         )}
       </div>
-    </header>
+    </nav>
   );
 }
 

@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { getViralBreakdown } from '../../services/aiService';
 import useProjectStore from '../../stores/useProjectStore';
-import useUIStore from '../../stores/useUIStore';
 
 export default function ViralBreakdown() {
   const [url, setUrl] = useState('');
@@ -40,7 +39,7 @@ export default function ViralBreakdown() {
     
     // Inform user
     alert("Template applied! Switch to the editor to start building your reel using the suggested format.");
-    useUIStore.getState().setCurrentView('editor');
+    window.location.href = `/editor/${useProjectStore.getState().projectId || 'new'}`;
   };
 
   return (

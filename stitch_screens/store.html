@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SnapVerse - AI Asset Store</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;900&amp;family=Space+Grotesk:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#414755",
+                    "outline-variant": "#c1c6d7",
+                    "surface-container-lowest": "#ffffff",
+                    "inverse-surface": "#2f3034",
+                    "surface-container-low": "#f4f3f8",
+                    "inverse-on-surface": "#f1f0f5",
+                    "on-surface": "#1a1b1f",
+                    "on-primary-container": "#fefcff",
+                    "primary-fixed": "#d8e2ff",
+                    "on-secondary-fixed-variant": "#3631b4",
+                    "primary-fixed-dim": "#adc6ff",
+                    "error-container": "#ffdad6",
+                    "surface-container-highest": "#e3e2e7",
+                    "secondary": "#4c4aca",
+                    "secondary-container": "#6664e4",
+                    "secondary-fixed-dim": "#c2c1ff",
+                    "on-tertiary-fixed": "#351000",
+                    "outline": "#717786",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed": "#e2dfff",
+                    "surface-dim": "#dad9df",
+                    "on-secondary": "#ffffff",
+                    "primary": "#0058bc",
+                    "surface-bright": "#faf9fe",
+                    "surface-variant": "#e3e2e7",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#c64f00",
+                    "on-error": "#ffffff",
+                    "surface": "#faf9fe",
+                    "tertiary-fixed-dim": "#ffb595",
+                    "on-secondary-fixed": "#0c006a",
+                    "surface-container": "#eeedf3",
+                    "on-primary-fixed-variant": "#004493",
+                    "on-background": "#1a1b1f",
+                    "inverse-primary": "#adc6ff",
+                    "tertiary": "#9e3d00",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#005bc1",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#ffdbcc",
+                    "on-tertiary-fixed-variant": "#7c2e00",
+                    "primary-container": "#0070eb",
+                    "on-tertiary-container": "#fffbff",
+                    "background": "#faf9fe",
+                    "surface-container-high": "#e9e7ed",
+                    "on-secondary-container": "#fffbff",
+                    "on-primary-fixed": "#001a41"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "margin-page": "24px",
+                    "stack-md": "16px",
+                    "stack-sm": "8px",
+                    "panel-padding": "16px",
+                    "gutter": "12px"
+            },
+            "fontFamily": {
+                    "h1": ["Inter"],
+                    "display": ["Inter"],
+                    "mono-label": ["Space Grotesk"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "h2": ["Inter"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "h1": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "mono-label": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c6d7;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen overflow-hidden flex flex-col font-body-md">
+<!-- TopNavBar -->
+<nav class="bg-surface dark:bg-inverse-surface flex justify-between items-center px-panel-padding h-16 w-full sticky top-0 z-50 border-b border-outline-variant dark:border-outline flat no shadows">
+<div class="flex items-center gap-8 h-full">
+<div class="font-display text-display font-black text-primary dark:text-inverse-primary">SnapVerse</div>
+<div class="relative flex items-center h-full ml-4">
+<span class="material-symbols-outlined absolute left-3 text-outline-variant pointer-events-none">search</span>
+<input class="bg-surface-container-low border border-outline-variant rounded-full pl-10 pr-4 py-1.5 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-64 transition-all placeholder:text-outline" placeholder="Search AI assets, tools, effects..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-1 h-full">
+<a class="h-full flex items-center px-4 text-on-surface-variant dark:text-on-surface-variant font-body-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Projects</a>
+<a class="h-full flex items-center px-4 text-primary dark:text-inverse-primary font-h2 border-b-2 border-primary hover:text-primary dark:hover:text-primary-fixed-dim transition-colors Active: scale-95 duration-150" href="#">Asset Store</a>
+<a class="h-full flex items-center px-4 text-on-surface-variant dark:text-on-surface-variant font-body-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Tutorials</a>
+</div>
+<div class="flex items-center gap-4 h-full">
+<button class="font-label-sm text-label-sm px-4 py-1.5 rounded-full border border-primary text-primary hover:bg-surface-container-low transition-colors">Share</button>
+<button class="font-label-sm text-label-sm px-4 py-1.5 rounded-full bg-primary text-on-primary hover:bg-surface-tint transition-colors">Export</button>
+<div class="flex gap-2 ml-2 text-on-surface-variant">
+<button class="p-1.5 rounded-full hover:bg-surface-container-low transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+<button class="p-1.5 rounded-full hover:bg-surface-container-low transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</nav>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="bg-surface-container-low dark:bg-surface-container-lowest docked h-full left-0 w-20 border-r border-outline-variant dark:border-outline flat no shadows flex flex-col justify-between py-stack-md z-40">
+<div class="flex flex-col items-center w-full gap-stack-md">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant flex items-center justify-center mb-2">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A close up portrait of a young woman with a clean, modern aesthetic. The lighting is bright and soft, highlighting a professional and approachable demeanor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbDnIx_oU0E2AydcT_WyGvnR-zaowYivwpg7mVzoUbqllN_QX1-pOVZD54MpeTQ4ZO9Bj7mPYgNGf34fXhv2hSnjZDcRuxmnpO6sVMP5AJGL2hapojB68Sclp0y00WfkiSN2aHytz8Uz5ed7nUJgyBDUjNg7_xbzga_zrkxIXahEiG_z3UswgsKD_oNjlo4fa6BaeIankd152hQvGEUeTEBAqCpMls3_6rT19pWmEvQjyyN4AN-TMsEAhnTOOzoXUSFHkOVJFutG4"/>
+</div>
+<div class="flex flex-col w-full px-1 gap-1">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl w-full">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="mt-1 font-label-sm text-[10px] text-center w-full truncate">Media</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl w-full">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="mt-1 font-label-sm text-[10px] text-center w-full truncate">AI Tools</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl w-full">
+<span class="material-symbols-outlined">auto_fix_high</span>
+<span class="mt-1 font-label-sm text-[10px] text-center w-full truncate">Effects</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl w-full">
+<span class="material-symbols-outlined">movie_edit</span>
+<span class="mt-1 font-label-sm text-[10px] text-center w-full truncate">Transitions</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl w-full">
+<span class="material-symbols-outlined">music_note</span>
+<span class="mt-1 font-label-sm text-[10px] text-center w-full truncate">Audio</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col items-center w-full gap-2 px-1">
+<button class="w-10 h-10 flex items-center justify-center bg-primary text-on-primary rounded-full hover:bg-surface-tint shadow-sm mb-4" title="New Asset">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl w-full">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="mt-1 font-label-sm text-[10px] text-center w-full truncate">Help</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl w-full">
+<span class="material-symbols-outlined">chat_bubble_outline</span>
+<span class="mt-1 font-label-sm text-[10px] text-center w-full truncate">Feedback</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-background p-margin-page relative">
+<!-- Trending Header Bento -->
+<div class="mb-8">
+<h1 class="font-h1 text-h1 text-on-surface mb-4">Discover Assets</h1>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter h-[320px]">
+<!-- Featured Large -->
+<div class="md:col-span-2 relative rounded-xl overflow-hidden group cursor-pointer border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
+<img alt="Featured AI Effect" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A striking abstract digital art piece featuring glowing, generative geometric shapes like liquid metal in electric blue and soft violet. The background is a pristine, minimalist white space illuminated by high-key studio lighting. The scene creates a modern, sleek 'pro-light' aesthetic representing advanced AI capabilities." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEkiNnVlAqV5OI9yvrmLasw328mmz_w71jnSgNpuUacqI_JHicIRJ_RMDW4N6jq81tFaervf_DsLyUnuE_oU_k7fCPlEN5XB25QZCgkNb5UOI0Mn4kiDV250wyajTOklgDBPCIg_0TJi_XR8rI6Wq1-Ag0ivLjtWDRDLuXUA0tUrKSSBnsQcB7gPIldXLpQqssOXvxgVzCiPHeBWGtFaePrXIaqvir4d7rhvKNYbbFinpWM4_FM02LyIQirPJxssOpn2RNfvXenrM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-6 w-full">
+<span class="inline-block px-2 py-1 rounded-full bg-surface/20 backdrop-blur-md border border-surface/30 font-mono-label text-mono-label text-on-primary mb-2">STAFF PICK</span>
+<h2 class="font-display text-[28px] leading-tight text-on-primary font-bold mb-1">Neon Flux Particle Generator</h2>
+<p class="font-body-md text-on-primary/80 max-w-md">Instantly add audio-reactive neon particles to any clip. Powered by Gen-3 Engine.</p>
+</div>
+</div>
+<!-- Trending Small Cards -->
+<div class="flex flex-col gap-gutter">
+<div class="flex-1 relative rounded-xl overflow-hidden group cursor-pointer border border-outline-variant shadow-sm hover:shadow-md transition-shadow bg-surface">
+<img alt="3D Transitions" class="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" data-alt="A clean, minimalist 3D rendering of soft geometric primitives intersecting. The color palette features pale blues and whites, utilizing soft, diffused lighting to create a calm, modern studio environment. The aesthetic is highly polished and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDVYN4_cg9uLKxOZHyJL74Kx3pYTYSf80AAtEtJVZ6wHculhyyqD089fsDCXq1gQdH_N8_pwVnASiojB8rcRlvz3MzC0X7_jqUre49LDsl9Fa9yB6YN1ng2rFb3e3NwwxDhAVEuC0D1YDqTRCKq4CKbamEyhxy8T3v0z9CQGamfX2W_6Yev8kghnkX0fkb8J2UJNBvzA8yEBVEEW_tuWfO8EnKiKjWE-Y33BjUaozeeuna9A7RgQJWef_n11LS6lMa-zm974E_p2I"/>
+<div class="absolute bottom-0 left-0 p-4">
+<h3 class="font-h2 text-h2 text-on-surface mb-1">Glassmorphic Cuts</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">3D Transitions</p>
+</div>
+</div>
+<div class="flex-1 relative rounded-xl overflow-hidden group cursor-pointer border border-outline-variant shadow-sm hover:shadow-md transition-shadow bg-surface">
+<img alt="Audio Visualizer" class="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" data-alt="A modern visual representation of soundwaves using crisp, thin lines of vivid blue against a very light grey background. The design is minimal, technical, and precise, aligning with a professional audio editing interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARg_VaPnR6eHRBhKSmrTWe8QQNcQzY1-LQ37WG0LFJqF20PicBpk-f4rXyM8FpPi3sEgNYCPHQzj_JD9XixcMYD7ud7GHqlq7Mxyw8da7y_m58kotYJ1IImQzMDxhYeefIq2j9WAYI67RFPedE942YejneA865GZ0F2grNN_zAsufc7vQk4crZK1pBtyL0-Siv7q7PGUt1mjpOqb40nPO9dUaz3NPHr1K5wogoEV9krNRS9vjrhb-oUpP4Hwuw-2Oc-EztvMOZ7rA"/>
+<div class="absolute bottom-0 left-0 p-4">
+<h3 class="font-h2 text-h2 text-on-surface mb-1">Cinematic Risers</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Trending Music</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Categories Filter -->
+<div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+<button class="px-4 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm whitespace-nowrap">All Assets</button>
+<button class="px-4 py-1.5 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-low transition-colors whitespace-nowrap">AI Effects</button>
+<button class="px-4 py-1.5 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-low transition-colors whitespace-nowrap">3D Transitions</button>
+<button class="px-4 py-1.5 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-low transition-colors whitespace-nowrap">Trending Music</button>
+<button class="px-4 py-1.5 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-low transition-colors whitespace-nowrap">Stock Reels</button>
+<button class="px-4 py-1.5 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-low transition-colors whitespace-nowrap">Presets</button>
+</div>
+<!-- Asset Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden flex flex-col hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 group">
+<div class="relative h-40 bg-surface-container-low overflow-hidden">
+<img alt="Liquid Distortion Effect" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Abstract fluid simulation showing swirling waves of iridescent blue and silver. The composition is brightly lit against a light backdrop, emphasizing a clean, modern technological aesthetic suitable for high-end video effects." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKYChpp6xvaOH_dXDjNb6cQ5BiXJkO6zIIyDUBRxv9NAn8GxA-WAkgI-H2ZRIsl1SM0fYDQnRPpfNJU0YOcHI92E9y3OvnxAEx-B0Ui6DtbLJxZjbXa_jfGqNRATDG2fddtbfzcg0Ew1RjadAL01V9J9SSi4JfHMuZoDfyjhdWWGSlCq8n9XGfkl5y1HEPe7klH4SPneJLJI8y2yTpJcmcTILWM8IgypxK0DK7QDZKhIpe7-HyzNa-33z5ThrtPpB2Hen9cAY3Dt0"/>
+<div class="absolute top-2 left-2 flex gap-1">
+<span class="bg-surface/80 backdrop-blur-sm border border-outline-variant/50 text-on-surface font-mono-label text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary">auto_fix_high</span> Effect
+                            </span>
+</div>
+</div>
+<div class="p-3 flex flex-col flex-1">
+<h4 class="font-h2 text-[16px] text-on-surface mb-1 truncate">Holographic Liquid Distortion</h4>
+<p class="font-body-md text-[13px] text-on-surface-variant mb-4 line-clamp-2">Adds a refractive, high-end liquid glass displacement map to any footage.</p>
+<div class="mt-auto flex gap-2">
+<button class="flex-1 py-1.5 rounded-lg border border-outline-variant text-on-surface font-label-sm text-label-sm hover:bg-surface-container-low transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span> Preview
+                            </button>
+<button class="flex-1 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container font-label-sm text-label-sm hover:bg-secondary transition-colors flex items-center justify-center gap-1">
+                                Add
+                            </button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden flex flex-col hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 group">
+<div class="relative h-40 bg-surface-container-low overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-[#d8e2ff] to-[#f4f3f8] flex items-center justify-center">
+<span class="material-symbols-outlined text-5xl text-primary/40">360</span>
+</div>
+<img alt="Seamless Zoom" class="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-500 mix-blend-overlay" data-alt="A minimalist architectural detail showing sharp, intersecting planes of white concrete under bright, natural daylight. The geometric precision and clean lines represent a seamless, spatial transition concept in video editing." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjN1lcwBEHh98uKG3J3yDvWcimyZJAKhBGEt1__LCakBwfTdNU00RP2U5lVh-5TLj-uwgEeJ3dLGvtEmqISwv8_3J6Gogyzh_nWdJwg1fqeTE9pAAHDguFR77euGcpc1DWlxwQ6yIeaAHy_TUklqh4W-vqszMz-ZP6GXW86I-P0_I1-bPhroU0B_6cc_cArwncLkqEKpDRmN63n0QRO9_jLiSKpoySdFjxdTYT4Z5K5CyTJZBUDEMcghme9DGmCi15GYLYi8ivJNE"/>
+<div class="absolute top-2 left-2 flex gap-1">
+<span class="bg-surface/80 backdrop-blur-sm border border-outline-variant/50 text-on-surface font-mono-label text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary">movie_edit</span> Transition
+                            </span>
+</div>
+</div>
+<div class="p-3 flex flex-col flex-1">
+<h4 class="font-h2 text-[16px] text-on-surface mb-1 truncate">Seamless Optics Zoom</h4>
+<p class="font-body-md text-[13px] text-on-surface-variant mb-4 line-clamp-2">Camera-matched zoom transitions with authentic chromatic aberration.</p>
+<div class="mt-auto flex gap-2">
+<button class="flex-1 py-1.5 rounded-lg border border-outline-variant text-on-surface font-label-sm text-label-sm hover:bg-surface-container-low transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span> Preview
+                            </button>
+<button class="flex-1 py-1.5 rounded-lg border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 transition-colors flex items-center justify-center gap-1">
+                                Add
+                            </button>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden flex flex-col hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 group">
+<div class="relative h-40 bg-surface-container-low overflow-hidden">
+<img alt="AI Sky Replacement" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A serene, minimalist landscape featuring a vast, perfectly clear gradient sky transitioning from soft dawn pink to pristine white. The landscape below is subtly hinted at with smooth, abstract geometry. The lighting is soft, creating a bright, uplifting 'pro-light' mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH6Up5hyaMn-n9Tut1_RrlX-LnFfxvlW9cCpgDRn4YRs_hU3WP091YHf95WLXMVYUZ5_lNvZ2VacUmQw54eOoVLbIvj1ApeqBPJk0jI30zVJzhEY6uZC29Y2TYE_MlCJn4z-myWrX2w_QTAI3egNhxgf1_UZyPB1UgjNfKtIh0nUk7uHzeO4AdYvWE-qc4JC0T-ik7OWdDfthQeNaDZkBcR_wh7j49jrA1exW4S0RIwo8khkDMDggJBjyGU1SslNAfJ-FF6JcWkhk"/>
+<div class="absolute top-2 left-2 flex gap-1">
+<span class="bg-surface/80 backdrop-blur-sm border border-outline-variant/50 text-on-surface font-mono-label text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary">auto_awesome</span> AI Tool
+                            </span>
+</div>
+</div>
+<div class="p-3 flex flex-col flex-1">
+<h4 class="font-h2 text-[16px] text-on-surface mb-1 truncate">Dreamscape Sky Replacer</h4>
+<p class="font-body-md text-[13px] text-on-surface-variant mb-4 line-clamp-2">One-click AI sky extraction and replacement with relighting.</p>
+<div class="mt-auto flex gap-2">
+<button class="flex-1 py-1.5 rounded-lg border border-outline-variant text-on-surface font-label-sm text-label-sm hover:bg-surface-container-low transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span> Preview
+                            </button>
+<button class="flex-1 py-1.5 rounded-lg border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 transition-colors flex items-center justify-center gap-1 bg-gradient-to-r from-primary/10 to-secondary-container/10">
+                                Add
+                            </button>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden flex flex-col hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 group">
+<div class="relative h-40 bg-surface-container-lowest overflow-hidden flex items-center justify-center border-b border-surface-variant">
+<div class="flex items-end gap-1 h-12">
+<div class="w-2 bg-primary rounded-t-sm h-4"></div>
+<div class="w-2 bg-primary rounded-t-sm h-8"></div>
+<div class="w-2 bg-primary rounded-t-sm h-12"></div>
+<div class="w-2 bg-primary rounded-t-sm h-6"></div>
+<div class="w-2 bg-primary rounded-t-sm h-10"></div>
+<div class="w-2 bg-primary rounded-t-sm h-3"></div>
+<div class="w-2 bg-primary rounded-t-sm h-7"></div>
+</div>
+<div class="absolute top-2 left-2 flex gap-1">
+<span class="bg-surface/80 backdrop-blur-sm border border-outline-variant/50 text-on-surface font-mono-label text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary">music_note</span> Audio
+                            </span>
+</div>
+<span class="absolute bottom-2 right-2 font-mono-label text-[10px] text-on-surface-variant bg-surface px-1.5 py-0.5 rounded border border-outline-variant">2:14</span>
+</div>
+<div class="p-3 flex flex-col flex-1">
+<h4 class="font-h2 text-[16px] text-on-surface mb-1 truncate">Corporate Tech Pulse</h4>
+<p class="font-body-md text-[13px] text-on-surface-variant mb-4 line-clamp-2">Clean, minimal electronic background track ideal for product reveals.</p>
+<div class="mt-auto flex gap-2">
+<button class="flex-1 py-1.5 rounded-lg border border-outline-variant text-on-surface font-label-sm text-label-sm hover:bg-surface-container-low transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span> Preview
+                            </button>
+<button class="flex-1 py-1.5 rounded-lg border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 transition-colors flex items-center justify-center gap-1">
+                                Add
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

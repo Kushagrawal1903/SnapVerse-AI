@@ -5,19 +5,69 @@
    ═══════════════════════════════════════ */
 
 @theme {
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f5f5f7;
-  --color-bg-surface: #ededf0;
-  --color-accent-primary: #5b4ff5;
-  --color-accent-secondary: #00b894;
-  --color-accent-warm: #ff6b35;
-  --color-text-primary: #0d0d12;
-  --color-text-secondary: #5a5a72;
-  --color-text-muted: #9999b0;
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-strong: rgba(0, 0, 0, 0.14);
-  --color-timeline-bg: #f0f0f5;
-  --color-timeline-track: #e8e8f0;
+  --color-on-surface-variant: #414755;
+  --color-outline-variant: #c1c6d7;
+  --color-surface-container-lowest: #ffffff;
+  --color-inverse-surface: #2f3034;
+  --color-surface-container-low: #f4f3f8;
+  --color-inverse-on-surface: #f1f0f5;
+  --color-on-surface: #1a1b1f;
+  --color-on-primary-container: #fefcff;
+  --color-primary-fixed: #d8e2ff;
+  --color-on-secondary-fixed-variant: #3631b4;
+  --color-primary-fixed-dim: #adc6ff;
+  --color-error-container: #ffdad6;
+  --color-surface-container-highest: #e3e2e7;
+  --color-secondary: #4c4aca;
+  --color-secondary-container: #6664e4;
+  --color-secondary-fixed-dim: #c2c1ff;
+  --color-on-tertiary-fixed: #351000;
+  --color-outline: #717786;
+  --color-on-error-container: #93000a;
+  --color-secondary-fixed: #e2dfff;
+  --color-surface-dim: #dad9df;
+  --color-on-secondary: #ffffff;
+  --color-primary: #0058bc;
+  --color-surface-bright: #faf9fe;
+  --color-surface-variant: #e3e2e7;
+  --color-error: #ba1a1a;
+  --color-tertiary-container: #c64f00;
+  --color-on-error: #ffffff;
+  --color-surface: #faf9fe;
+  --color-tertiary-fixed-dim: #ffb595;
+  --color-on-secondary-fixed: #0c006a;
+  --color-surface-container: #eeedf3;
+  --color-on-primary-fixed-variant: #004493;
+  --color-on-background: #1a1b1f;
+  --color-inverse-primary: #adc6ff;
+  --color-tertiary: #9e3d00;
+  --color-on-primary: #ffffff;
+  --color-surface-tint: #005bc1;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-fixed: #ffdbcc;
+  --color-on-tertiary-fixed-variant: #7c2e00;
+  --color-primary-container: #0070eb;
+  --color-on-tertiary-container: #fffbff;
+  --color-background: #faf9fe;
+  --color-surface-container-high: #e9e7ed;
+  --color-on-secondary-container: #fffbff;
+  --color-on-primary-fixed: #001a41;
+
+  /* Map old snapverse variables to new system so nothing breaks immediately */
+  --color-bg-primary: var(--color-surface-container-lowest);
+  --color-bg-secondary: var(--color-surface-container-low);
+  --color-bg-surface: var(--color-surface-container);
+  --color-accent-primary: var(--color-primary);
+  --color-accent-secondary: var(--color-secondary);
+  --color-accent-warm: var(--color-tertiary);
+  --color-text-primary: var(--color-on-surface);
+  --color-text-secondary: var(--color-on-surface-variant);
+  --color-text-muted: var(--color-outline);
+  --color-border: var(--color-outline-variant);
+  --color-border-strong: var(--color-outline);
+  
+  --color-timeline-bg: var(--color-surface-container-high);
+  --color-timeline-track: var(--color-surface-container-highest);
   --color-clip-video: #ddd8ff;
   --color-clip-video-text: #5b4ff5;
   --color-clip-audio: #c8f0e5;
@@ -29,17 +79,28 @@
   --color-ai-bg: #f5fffc;
   --color-ai-border: #d0f0e4;
 
-  --shadow-default: 0 2px 12px rgba(0, 0, 0, 0.08);
-  --shadow-strong: 0 4px 24px rgba(0, 0, 0, 0.12);
-  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-default: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.04);
 
-  --radius-default: 8px;
-  --radius-card: 12px;
-  --radius-pill: 20px;
+  --radius-default: 0.25rem;
+  --radius-card: 0.5rem;
+  --radius-pill: 9999px;
 
-  --font-display: "Syne", sans-serif;
-  --font-body: "DM Sans", sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
+  --font-display: "Inter", sans-serif;
+  --font-h1: "Inter", sans-serif;
+  --font-h2: "Inter", sans-serif;
+  --font-body-lg: "Inter", sans-serif;
+  --font-body-md: "Inter", sans-serif;
+  --font-label-sm: "Inter", sans-serif;
+  --font-mono-label: "Space Grotesk", monospace;
+  
+  --spacing-unit: 4px;
+  --spacing-margin-page: 24px;
+  --spacing-stack-md: 16px;
+  --spacing-stack-sm: 8px;
+  --spacing-panel-padding: 16px;
+  --spacing-gutter: 12px;
 }
 
 /* ═══════════════════════════════════════
@@ -995,3 +1056,20 @@ html, body, #root {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* ═══════════════════════════════════════
+   DASHBOARD ANIMATIONS
+   ═══════════════════════════════════════ */
+@keyframes shimmerPulse {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@keyframes loading-bar {
+  0% { width: 10%; margin-left: 0; }
+  50% { width: 50%; margin-left: 25%; }
+  100% { width: 10%; margin-left: 90%; }
+}
+
+.hide-scroll::-webkit-scrollbar { display: none; }
+.hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }

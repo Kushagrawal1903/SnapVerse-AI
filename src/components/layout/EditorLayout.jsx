@@ -148,63 +148,40 @@ export default function EditorLayout() {
 
 function EmptyState() {
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      height: '100%', padding: 40, userSelect: 'none',
-    }}>
+    <div className="flex flex-col items-center justify-center h-full p-10 select-none w-full">
       <div
-        style={{
-          width: '80%', maxWidth: 340, padding: '48px 32px',
-          border: '2px dashed var(--color-border-strong)',
-          borderRadius: 16, textAlign: 'center',
-          animation: 'uploadPulse 2.5s ease-in-out infinite',
-          background: 'rgba(91,79,245,0.02)',
-        }}
+        className="w-[80%] max-w-[340px] px-8 py-12 border-2 border-dashed border-outline-variant rounded-2xl text-center bg-surface hover:bg-surface-container-lowest hover:border-primary transition-all duration-300 cursor-pointer group"
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
         onDrop={(e) => {
           e.preventDefault();
           const uploadZone = document.querySelector('[data-upload-zone]');
           if (uploadZone) uploadZone.dispatchEvent(new Event('triggerUpload'));
         }}
+        onClick={() => {
+          const input = document.querySelector('input[type="file"][data-media-input]');
+          if (input) input.click();
+        }}
       >
-        <div style={{ marginBottom: 20 }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
+        <div className="mb-5 flex justify-center">
+          <div className="w-16 h-16 rounded-full bg-primary-fixed/30 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+            <span className="material-symbols-outlined text-[32px]">upload_file</span>
+          </div>
         </div>
-        <div style={{
-          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18,
-          color: 'var(--color-text-primary)', marginBottom: 6,
-        }}>
-          Drop your clips here to start
+        <div className="font-display font-bold text-xl text-on-surface mb-2">
+          Drop clips to begin
         </div>
-        <div style={{
-          fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6,
-          marginBottom: 24,
-        }}>
-          Import videos, photos, and audio to begin editing your reel
+        <div className="text-sm text-on-surface-variant leading-relaxed mb-6">
+          Import video, audio, or images to start building your sequence.
         </div>
-        <button
-          className="btn-primary"
-          onClick={() => {
-            const input = document.querySelector('input[type="file"][data-media-input]');
-            if (input) input.click();
-          }}
-          style={{
-            padding: '10px 28px', fontSize: 14, fontWeight: 600,
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+        <button className="bg-primary text-on-primary px-6 py-2 rounded-lg font-label-sm font-semibold hover:bg-surface-tint transition-colors flex items-center justify-center gap-2 mx-auto shadow-sm pointer-events-none">
+          <span className="material-symbols-outlined text-[18px]">add</span>
           Browse Files
         </button>
-        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 16 }}>
-          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>MP4, MOV, WebM, JPG, PNG, MP3, WAV</span>
+        <div className="mt-6 flex justify-center gap-4 text-[11px] text-outline uppercase font-mono-label">
+          <span>MP4</span>
+          <span>MOV</span>
+          <span>MP3</span>
+          <span>JPG</span>
         </div>
       </div>
     </div>

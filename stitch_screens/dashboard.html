@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SnapVerse - Project Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;900&amp;family=Space+Grotesk:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface-variant": "#414755",
+                        "outline-variant": "#c1c6d7",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#2f3034",
+                        "surface-container-low": "#f4f3f8",
+                        "inverse-on-surface": "#f1f0f5",
+                        "on-surface": "#1a1b1f",
+                        "on-primary-container": "#fefcff",
+                        "primary-fixed": "#d8e2ff",
+                        "on-secondary-fixed-variant": "#3631b4",
+                        "primary-fixed-dim": "#adc6ff",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e3e2e7",
+                        "secondary": "#4c4aca",
+                        "secondary-container": "#6664e4",
+                        "secondary-fixed-dim": "#c2c1ff",
+                        "on-tertiary-fixed": "#351000",
+                        "outline": "#717786",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#e2dfff",
+                        "surface-dim": "#dad9df",
+                        "on-secondary": "#ffffff",
+                        "primary": "#0058bc",
+                        "surface-bright": "#faf9fe",
+                        "surface-variant": "#e3e2e7",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#c64f00",
+                        "on-error": "#ffffff",
+                        "surface": "#faf9fe",
+                        "tertiary-fixed-dim": "#ffb595",
+                        "on-secondary-fixed": "#0c006a",
+                        "surface-container": "#eeedf3",
+                        "on-primary-fixed-variant": "#004493",
+                        "on-background": "#1a1b1f",
+                        "inverse-primary": "#adc6ff",
+                        "tertiary": "#9e3d00",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#005bc1",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#ffdbcc",
+                        "on-tertiary-fixed-variant": "#7c2e00",
+                        "primary-container": "#0070eb",
+                        "on-tertiary-container": "#fffbff",
+                        "background": "#faf9fe",
+                        "surface-container-high": "#e9e7ed",
+                        "on-secondary-container": "#fffbff",
+                        "on-primary-fixed": "#001a41"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "unit": "4px",
+                        "margin-page": "24px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "panel-padding": "16px",
+                        "gutter": "12px"
+                    },
+                    fontFamily: {
+                        "h1": ["Inter"],
+                        "display": ["Inter"],
+                        "mono-label": ["Space Grotesk"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "h2": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    fontSize: {
+                        "h1": ["24px", { lineHeight: "1.3", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "display": ["32px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "mono-label": ["11px", { lineHeight: "1", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "body-md": ["14px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "body-lg": ["16px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "h2": ["20px", { lineHeight: "1.3", fontWeight: "600" }],
+                        "label-sm": ["12px", { lineHeight: "1", letterSpacing: "0.02em", fontWeight: "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased overflow-x-hidden">
+<nav class="flex justify-between items-center px-panel-padding h-16 w-full sticky top-0 z-50 bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline">
+<div class="flex items-center gap-margin-page">
+<span class="font-display text-display font-black text-primary dark:text-inverse-primary tracking-tight">SnapVerse</span>
+<div class="relative hidden md:flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-outline-variant" style="font-size: 20px;">search</span>
+<input class="pl-10 pr-4 py-2 w-64 rounded-full bg-surface-container text-on-surface border-none focus:ring-1 focus:ring-primary font-body-md text-body-md placeholder:text-outline-variant outline-none transition-all" placeholder="Search projects..." type="text"/>
+</div>
+</div>
+<div class="hidden md:flex items-center h-full gap-8">
+<a class="h-full flex items-center text-primary dark:text-inverse-primary font-h2 border-b-2 border-primary hover:text-primary transition-colors hover:scale-95 duration-150" href="#">Projects</a>
+<a class="h-full flex items-center text-on-surface-variant dark:text-on-surface-variant font-body-md hover:text-primary transition-colors hover:scale-95 duration-150" href="#">Asset Store</a>
+<a class="h-full flex items-center text-on-surface-variant dark:text-on-surface-variant font-body-md hover:text-primary transition-colors hover:scale-95 duration-150" href="#">Tutorials</a>
+</div>
+<div class="flex items-center gap-stack-md">
+<button class="font-label-sm text-label-sm text-primary border border-primary px-4 py-2 rounded-lg hover:bg-primary-fixed transition-colors">Share</button>
+<button class="font-label-sm text-label-sm bg-primary text-on-primary px-4 py-2 rounded-lg hover:bg-on-primary-fixed-variant transition-colors shadow-sm">Export</button>
+<div class="flex items-center gap-stack-sm ml-2 text-on-surface-variant">
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined">settings</span></button>
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_circle</span></button>
+</div>
+</div>
+</nav>
+<div class="flex h-[calc(100vh-64px)]">
+<aside class="fixed left-0 top-16 bottom-0 flex flex-col justify-between py-stack-md docked h-full w-20 bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant dark:border-outline z-40">
+<div class="flex flex-col items-center gap-stack-sm w-full">
+<div class="mb-stack-md flex flex-col items-center">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden mb-2">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjSyYWoZijDRxqePOYAVRlaiwe30GzsY79i_pjXmooW6S2BXnHZAMMSwM5g-YNx2NEXZg_vDuzH7C0_pydPTLSlPWayZrfVS5VcYgNFbZgndmQBpJ_Z1eZzzhM25xkD97c3ZBPp0zZFAxUCL43RROGfF_MNv0LZpQU0Yqnb42QyBQVK68ohf7kwQ3lJ37Ty2LGbAB7mRO97IlBxdU6luNfv0sZn-jxcoOaEJCyCm5jwj8lJBVk0C6fSljokWkysdGvwH7pZKJawNw"/>
+</div>
+</div>
+<a class="w-full px-2" href="#">
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl m-1 p-2 hover:scale-90 duration-200 transition-all">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">folder_open</span>
+<span class="font-label-sm text-label-sm text-center">Media</span>
+</div>
+</a>
+<a class="w-full px-2" href="#">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high transition-all rounded-xl m-1">
+<span class="material-symbols-outlined mb-1">auto_awesome</span>
+<span class="font-label-sm text-label-sm text-center">AI Tools</span>
+</div>
+</a>
+<a class="w-full px-2" href="#">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high transition-all rounded-xl m-1">
+<span class="material-symbols-outlined mb-1">auto_fix_high</span>
+<span class="font-label-sm text-label-sm text-center">Effects</span>
+</div>
+</a>
+<a class="w-full px-2" href="#">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high transition-all rounded-xl m-1">
+<span class="material-symbols-outlined mb-1">movie_edit</span>
+<span class="font-label-sm text-label-sm text-center">Transitions</span>
+</div>
+</a>
+<a class="w-full px-2" href="#">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high transition-all rounded-xl m-1">
+<span class="material-symbols-outlined mb-1">music_note</span>
+<span class="font-label-sm text-label-sm text-center">Audio</span>
+</div>
+</a>
+</div>
+<div class="flex flex-col items-center gap-stack-sm w-full">
+<button class="w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center mb-stack-md hover:bg-surface-tint transition-colors shadow-sm" title="New Asset">
+<span class="material-symbols-outlined">add</span>
+</button>
+<a class="w-full px-2" href="#">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high transition-all rounded-xl m-1">
+<span class="material-symbols-outlined mb-1">help_outline</span>
+<span class="font-label-sm text-label-sm text-center">Help</span>
+</div>
+</a>
+<a class="w-full px-2" href="#">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high transition-all rounded-xl m-1">
+<span class="material-symbols-outlined mb-1">chat_bubble_outline</span>
+<span class="font-label-sm text-label-sm text-center">Feedback</span>
+</div>
+</a>
+</div>
+</aside>
+<main class="flex-1 ml-20 bg-background overflow-y-auto">
+<div class="max-w-7xl mx-auto p-margin-page">
+<header class="flex flex-col md:flex-row md:items-end justify-between gap-stack-md mb-8">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface mb-2">Projects Overview</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Manage, organize, and create new visual experiences.</p>
+</div>
+<div class="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant w-fit">
+<button class="px-4 py-1.5 rounded-md bg-surface text-primary font-label-sm text-label-sm shadow-sm border border-outline-variant">Personal</button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant font-label-sm text-label-sm hover:text-on-surface transition-colors">Shared</button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant font-label-sm text-label-sm hover:text-on-surface transition-colors">Archived</button>
+</div>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-12">
+<div class="lg:col-span-2 relative overflow-hidden rounded-xl bg-gradient-to-br from-primary to-secondary p-8 flex flex-col justify-between min-h-[240px] group cursor-pointer shadow-sm hover:shadow-md transition-shadow">
+<div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-50"></div>
+<div class="relative z-10">
+<div class="bg-surface/20 w-fit p-2 rounded-lg backdrop-blur-sm mb-4">
+<span class="material-symbols-outlined text-on-primary">add_circle</span>
+</div>
+<h2 class="font-display text-display text-on-primary mb-2">Start Blank Project</h2>
+<p class="font-body-lg text-body-lg text-primary-fixed-dim max-w-md">Open a clean workspace and build your narrative from scratch with total creative freedom.</p>
+</div>
+<div class="relative z-10 mt-6 flex items-center text-on-primary font-label-sm text-label-sm">
+<span class="mr-2 group-hover:translate-x-1 transition-transform">Create new</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</div>
+</div>
+<div class="flex flex-col gap-gutter">
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:border-secondary transition-colors cursor-pointer group flex flex-col justify-center relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-secondary to-tertiary"></div>
+<div class="flex items-center justify-between mb-3">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-mono-label text-mono-label bg-surface-container px-2 py-1 rounded text-on-surface-variant uppercase">AI Template</span>
+</div>
+<h3 class="font-h2 text-h2 text-on-surface mb-1 group-hover:text-secondary transition-colors">Social Vlog Starter</h3>
+<p class="font-label-sm text-label-sm text-outline">Auto-cuts silences, applies bright LUT.</p>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:border-primary transition-colors cursor-pointer group flex flex-col justify-center">
+<div class="flex items-center justify-between mb-3">
+<span class="material-symbols-outlined text-primary">movie</span>
+<span class="font-mono-label text-mono-label bg-surface-container px-2 py-1 rounded text-on-surface-variant uppercase">Template</span>
+</div>
+<h3 class="font-h2 text-h2 text-on-surface mb-1 group-hover:text-primary transition-colors">Cinematic Reel</h3>
+<p class="font-label-sm text-label-sm text-outline">24fps timeline with film grain presets.</p>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-h2 text-h2 text-on-surface">Recent Projects</h2>
+<button class="font-label-sm text-label-sm text-primary hover:underline flex items-center">
+                        View All <span class="material-symbols-outlined text-[16px] ml-1">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter pb-12">
+<div class="group flex flex-col bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-[0px_4px_12px_rgba(0,0,0,0.05)] transition-shadow">
+<div class="aspect-video bg-surface-container relative overflow-hidden border-b border-outline-variant">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A high-quality video thumbnail showing a sleek, modern home workspace with a coffee cup and a laptop. The scene is brightly lit with natural daylight, embodying a Pro-Light minimalist aesthetic. The color palette features pristine whites, light greys, and subtle accents of SnapVerse blue. The mood is calm, organized, and focused on creative productivity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe0reASiIlYZvVJFitowzsGDTJ301H47Ouwr-tKF-6NSAfruAXyFYOtiZSlkPvhY11efK0hokG9TiMdD_mp_crqs1Fyl_eGg2KFWP4xbOs4FXhAvO0_U_XpuQ-z9x3xsKklH5G5oDEznSG7tDJoulkOuiDhGLq1KNJXBqg2itdQrr4UvH_dF9kfOp_x_AbVckAJvTXM46imhDaVd2NbOK0IZswuAdwiROo2XHTALCd3Nu3Narf_-VZp9UI0h3OxfWTDmaCtvhYepU"/>
+<div class="absolute bottom-2 right-2 bg-on-surface/80 backdrop-blur-sm text-surface-container-lowest font-mono-label text-mono-label px-1.5 py-0.5 rounded">04:23</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-h2 text-h2 text-on-surface truncate pr-2">Tech Review Q3</h3>
+<button class="text-outline-variant hover:text-on-surface transition-colors mt-1"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+</div>
+<p class="font-body-md text-body-md text-outline text-sm">Edited 2 hours ago</p>
+</div>
+</div>
+<div class="group flex flex-col bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-[0px_4px_12px_rgba(0,0,0,0.05)] transition-shadow">
+<div class="aspect-video bg-surface-container relative overflow-hidden border-b border-outline-variant">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A striking, professional video thumbnail featuring a wide landscape shot of a misty mountain range at dawn. The image maintains a clean, high-contrast look fitting a modern software interface. It utilizes a refined color palette of deep cool blues and soft whites, avoiding any visual clutter. The atmosphere is cinematic and expansive." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDySG94X4ErCwJnjEtIhM6k_o0_UjeapK-eYMKsgyizBuDaj3GdMURb93Fd7fkVelqZc08QKE1tmLIF3ANxa1gq_8qlS4crOLjF4sbtmkSti7s3CbrBoaL0xqflq0MkFfW6iSTjzHyTNJOHAebnJy15-6c8JUmc1xO9ZsdCAHJOp7dGoZIl2gBw5vGCl2B9K6VPfv9cKdeew7Xg6Io1i_aGUSploUc6E5OIv4JIefhNrvuvjawgWeAZAmqpVetEUGccYusYymhQnco"/>
+<div class="absolute bottom-2 right-2 bg-on-surface/80 backdrop-blur-sm text-surface-container-lowest font-mono-label text-mono-label px-1.5 py-0.5 rounded">12:05</div>
+<div class="absolute top-2 left-2 bg-secondary/90 text-surface-container-lowest font-mono-label text-mono-label px-2 py-0.5 rounded flex items-center"><span class="material-symbols-outlined text-[12px] mr-1">auto_awesome</span> AI Sync</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-h2 text-h2 text-on-surface truncate pr-2">Iceland Documentary</h3>
+<button class="text-outline-variant hover:text-on-surface transition-colors mt-1"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+</div>
+<p class="font-body-md text-body-md text-outline text-sm">Edited yesterday</p>
+</div>
+</div>
+<div class="group flex flex-col bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-[0px_4px_12px_rgba(0,0,0,0.05)] transition-shadow">
+<div class="aspect-video bg-surface-container relative overflow-hidden border-b border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-outline-variant text-[48px] font-light">movie</span>
+<div class="absolute bottom-2 right-2 bg-on-surface/80 backdrop-blur-sm text-surface-container-lowest font-mono-label text-mono-label px-1.5 py-0.5 rounded">00:45</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-h2 text-h2 text-on-surface truncate pr-2">Social Promo Draft</h3>
+<button class="text-outline-variant hover:text-on-surface transition-colors mt-1"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+</div>
+<p class="font-body-md text-body-md text-outline text-sm">Edited 3 days ago</p>
+</div>
+</div>
+<div class="group flex flex-col bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-[0px_4px_12px_rgba(0,0,0,0.05)] transition-shadow">
+<div class="aspect-video bg-surface-container relative overflow-hidden border-b border-outline-variant">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A crisp, macro photograph of a sleek, modern corporate presentation setup with charts and a stylus on a tablet. The lighting is soft and diffused, creating minimal shadows and highlighting the clean, organized layout. The overall aesthetic perfectly matches a bright, minimalist SaaS environment with a technical, authoritative tone, using light grey and white surfaces." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUmldQt9_Mci76N8DX3QhkUMbb62LdZa62ZpYE30V-SRB-dJvjQl8OB2GRLfCo_TE28UeaaeQ1eX6vtJX2iWiNpE3iNAWwox9V4lngdFnT6Fm8WlTtBt-lFV1VxcAzbQRSnkntYLIxmqoXEIYDBbhipTfha8ZZ8dyUSCT5OQ2RQ8WOU7X6skw2vTO6f9vBraiULRwFUtXW7QqFDaKgM6GNdP2UQScKl3g3xhRY42ZEmW4_mgGKxs0x53XnAlKqh6nRl17Z_6IU5oI"/>
+<div class="absolute bottom-2 right-2 bg-on-surface/80 backdrop-blur-sm text-surface-container-lowest font-mono-label text-mono-label px-1.5 py-0.5 rounded">08:12</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-h2 text-h2 text-on-surface truncate pr-2">Q4 All Hands</h3>
+<button class="text-outline-variant hover:text-on-surface transition-colors mt-1"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+</div>
+<p class="font-body-md text-body-md text-outline text-sm">Edited last week</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SnapVerse - Video Editor Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=Space+Grotesk:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-surface-variant": "#414755",
+                      "outline-variant": "#c1c6d7",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-surface": "#2f3034",
+                      "surface-container-low": "#f4f3f8",
+                      "inverse-on-surface": "#f1f0f5",
+                      "on-surface": "#1a1b1f",
+                      "on-primary-container": "#fefcff",
+                      "primary-fixed": "#d8e2ff",
+                      "on-secondary-fixed-variant": "#3631b4",
+                      "primary-fixed-dim": "#adc6ff",
+                      "error-container": "#ffdad6",
+                      "surface-container-highest": "#e3e2e7",
+                      "secondary": "#4c4aca",
+                      "secondary-container": "#6664e4",
+                      "secondary-fixed-dim": "#c2c1ff",
+                      "on-tertiary-fixed": "#351000",
+                      "outline": "#717786",
+                      "on-error-container": "#93000a",
+                      "secondary-fixed": "#e2dfff",
+                      "surface-dim": "#dad9df",
+                      "on-secondary": "#ffffff",
+                      "primary": "#0058bc",
+                      "surface-bright": "#faf9fe",
+                      "surface-variant": "#e3e2e7",
+                      "error": "#ba1a1a",
+                      "tertiary-container": "#c64f00",
+                      "on-error": "#ffffff",
+                      "surface": "#faf9fe",
+                      "tertiary-fixed-dim": "#ffb595",
+                      "on-secondary-fixed": "#0c006a",
+                      "surface-container": "#eeedf3",
+                      "on-primary-fixed-variant": "#004493",
+                      "on-background": "#1a1b1f",
+                      "inverse-primary": "#adc6ff",
+                      "tertiary": "#9e3d00",
+                      "on-primary": "#ffffff",
+                      "surface-tint": "#005bc1",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-fixed": "#ffdbcc",
+                      "on-tertiary-fixed-variant": "#7c2e00",
+                      "primary-container": "#0070eb",
+                      "on-tertiary-container": "#fffbff",
+                      "background": "#faf9fe",
+                      "surface-container-high": "#e9e7ed",
+                      "on-secondary-container": "#fffbff",
+                      "on-primary-fixed": "#001a41"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "margin-page": "24px",
+                      "stack-md": "16px",
+                      "stack-sm": "8px",
+                      "panel-padding": "16px",
+                      "gutter": "12px"
+              },
+              "fontFamily": {
+                      "h1": [
+                              "Inter"
+                      ],
+                      "display": [
+                              "Inter"
+                      ],
+                      "mono-label": [
+                              "Space Grotesk"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "h2": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "h1": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "mono-label": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Thin scrollbars for panels */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c6d7;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #717786;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen flex flex-col overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center px-panel-padding h-16 w-full sticky top-0 z-50 bg-surface dark:bg-inverse-surface text-primary dark:text-inverse-primary border-b border-outline-variant dark:border-outline flat no shadows">
+<div class="flex items-center gap-6">
+<h1 class="font-display text-display font-black text-primary dark:text-inverse-primary">SnapVerse</h1>
+<nav class="hidden md:flex gap-4">
+<a class="text-on-surface-variant dark:text-on-surface-variant font-body-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Projects</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-body-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Asset Store</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-body-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Tutorials</a>
+</nav>
+</div>
+<div class="flex items-center bg-surface-container-low rounded-full px-4 py-2 w-64 border border-outline-variant focus-within:border-primary">
+<span class="material-symbols-outlined text-outline-variant mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none outline-none font-body-md text-on-surface w-full" placeholder="Search..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+<button class="font-label-sm text-label-sm px-4 py-2 border border-primary text-primary hover:bg-primary-container hover:text-on-primary-container transition-colors rounded">Share</button>
+<button class="font-label-sm text-label-sm px-4 py-2 bg-primary text-on-primary hover:bg-surface-tint transition-colors rounded">Export</button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-16 bottom-0 flex flex-col justify-between py-stack-md bg-surface-container-low dark:bg-surface-container-lowest text-primary dark:text-inverse-primary border-r border-outline-variant dark:border-outline h-full w-20 z-40">
+<div class="flex flex-col items-center gap-2">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl m-1 p-2 scale-90 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="folder_open" data-weight="fill">folder_open</span>
+<span class="font-label-sm text-label-sm">Media</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl m-1" href="#">
+<span class="material-symbols-outlined mb-1 text-secondary" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-label-sm text-label-sm">AI Tools</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl m-1" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="auto_fix_high">auto_fix_high</span>
+<span class="font-label-sm text-label-sm">Effects</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl m-1" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="movie_edit">movie_edit</span>
+<span class="font-label-sm text-label-sm">Transitions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl m-1" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="music_note">music_note</span>
+<span class="font-label-sm text-label-sm">Audio</span>
+</a>
+</div>
+<div class="flex flex-col items-center gap-4 mt-auto border-t border-outline-variant pt-4 mx-2">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl w-full">
+<span class="material-symbols-outlined mb-1" data-icon="help_outline">help_outline</span>
+<span class="font-label-sm text-label-sm">Help</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all rounded-xl w-full">
+<span class="material-symbols-outlined mb-1" data-icon="chat_bubble_outline">chat_bubble_outline</span>
+<span class="font-label-sm text-label-sm">Feedback</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-outline-variant mt-2">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A close up portrait of a young woman with a neutral expression. She has dark hair and clear skin. The lighting is soft and flattering, creating a professional and clean aesthetic typical of a high-quality user profile avatar. The background is simple and out of focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRgokB8O3qZ7V-j1zNUddsyxhwv74GKeqddDawUw1Tz5NECJMwonx-z3ooC-vpWsaa6LNdyzElmJHH3ZOhHkHSZ3K5C8RlXHLOkARKP90HiVX1o7UI-c0XlgW998M1eF7WmfjZbF2IiUa7g2V09ma3NZW40knChpzk_Ah7HaBvCE858XDppO44TWO_xXHzqRsl4mayFy-lcde-BeNsG9z6xSR_TWWMFPNu4D_aiw-gKtKAkqOALMiXdK9NkK2uYl4YaTunWgUI7dM"/>
+</div>
+</div>
+</nav>
+<!-- Main Workspace Area -->
+<main class="ml-20 flex-1 flex flex-col h-full bg-surface-container overflow-hidden">
+<!-- Top Panels: Asset Library & Video Player -->
+<div class="flex-1 flex gap-gutter p-gutter overflow-hidden h-[60%]">
+<!-- Asset Library Panel -->
+<div class="w-80 bg-surface border border-outline-variant rounded-lg flex flex-col shadow-sm flex-shrink-0">
+<div class="flex justify-between items-center p-2 border-b border-outline-variant bg-surface-container-low cursor-move rounded-t-lg">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Project Assets</span>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="drag_indicator">drag_indicator</span>
+</div>
+<div class="flex gap-2 p-2 border-b border-outline-variant bg-surface">
+<button class="px-3 py-1 bg-primary text-on-primary rounded-full font-label-sm text-label-sm">All</button>
+<button class="px-3 py-1 bg-surface-container text-on-surface-variant rounded-full font-label-sm text-label-sm border border-outline-variant">Video</button>
+<button class="px-3 py-1 bg-surface-container text-on-surface-variant rounded-full font-label-sm text-label-sm border border-outline-variant">Images</button>
+</div>
+<div class="flex-1 overflow-y-auto p-2 grid grid-cols-2 gap-2 content-start">
+<!-- Asset Item -->
+<div class="group relative rounded border border-outline-variant overflow-hidden aspect-video cursor-pointer hover:border-primary transition-colors">
+<img class="w-full h-full object-cover" data-alt="A wide angle shot of a rugged mountain landscape under a bright blue sky. The scene is majestic and expansive, with snow-capped peaks in the distance. The lighting is harsh midday sun, casting strong shadows on the rocky terrain. The overall mood is adventurous and pristine." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfVGFX5wplCHJyl8YgnjJtDK8LwVwHvA-hgHif5ge9qS7qZ4Ur1Pm49IoPviLhouTbm_eOyv50LYnYxU5P5rQSu_uWhTjOhiLpxJLCj87b3s-NKcdJaDhS71HZcnCzpawFlzqanWk1Ag0z2tMHAK4x6j_4tp1k_obvz2_o5aHVdvmZsdmY3XJJ27A9xSItYzvmiZJ4UY00t11sq247ykG06_rFjIlcbkGI244f-p308HznfPXi7kv7w_mhTvvxgHVVsemxEwrR8wM"/>
+<div class="absolute bottom-1 right-1 bg-black/60 text-white font-mono-label text-mono-label px-1 rounded">00:15</div>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white" data-icon="add_circle">add_circle</span>
+</div>
+</div>
+<!-- Asset Item -->
+<div class="group relative rounded border border-outline-variant overflow-hidden aspect-video cursor-pointer hover:border-primary transition-colors">
+<img class="w-full h-full object-cover" data-alt="A close up shot of a person's hands holding a vintage compass over a topographic map. The lighting is warm and slightly diffused, suggesting an indoor setting with natural light. The focus is sharp on the compass, blurring the map in the background. The mood is exploratory and detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSyh4D19XOO3t_TkbsOcvn0VqKwvV7PzlitS8yIZ630mh8LMYOd177Ki0JSF5PCsBwQijNkFnq_UViwAV_z8GAMGCRv0qCnRuHlhNettqtrQF39a6rNe-DhLE3685MPZIch_X3XhkozVyxsIHg_CwlERL1JtOvbqgcBbso_WvkLjlF9yS8N6bDicOxQ0dkkxoD73_iqD72_RFvuTpjVx7hGSy-DVsP0Y1raPcRtUl49fobSUYkfc8jSH2bOqwKs8eXMfyrrLsjdhg"/>
+<div class="absolute bottom-1 right-1 bg-black/60 text-white font-mono-label text-mono-label px-1 rounded">00:08</div>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white" data-icon="add_circle">add_circle</span>
+</div>
+</div>
+<!-- Asset Item -->
+<div class="group relative rounded border border-outline-variant overflow-hidden aspect-video cursor-pointer hover:border-primary transition-colors">
+<div class="w-full h-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-outline-variant text-3xl" data-icon="image">image</span>
+</div>
+<div class="absolute bottom-1 right-1 bg-black/60 text-white font-mono-label text-mono-label px-1 rounded">IMG</div>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white" data-icon="add_circle">add_circle</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Video Preview Player -->
+<div class="flex-1 bg-surface border border-outline-variant rounded-lg flex flex-col shadow-sm min-w-0">
+<div class="flex justify-between items-center p-2 border-b border-outline-variant bg-surface-container-low rounded-t-lg">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Preview</span>
+<span class="font-mono-label text-mono-label text-outline px-2 py-0.5 bg-surface-variant rounded">1080p - 60fps</span>
+</div>
+<div class="flex gap-2 text-outline-variant">
+<button class="hover:text-primary"><span class="material-symbols-outlined text-sm" data-icon="crop">crop</span></button>
+<button class="hover:text-primary"><span class="material-symbols-outlined text-sm" data-icon="aspect_ratio">aspect_ratio</span></button>
+<span class="material-symbols-outlined text-outline text-sm cursor-move" data-icon="drag_indicator">drag_indicator</span>
+</div>
+</div>
+<div class="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+<!-- Simulated Video Content -->
+<img class="w-full h-full object-contain" data-alt="The main video preview showing a wide angle shot of a rugged mountain landscape under a bright blue sky. The scene is majestic and expansive, with snow-capped peaks in the distance. The lighting is harsh midday sun, casting strong shadows on the rocky terrain. The overall mood is adventurous and pristine." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDb3rV1NwRRGAQ-BnNu3ROOYaidbgnZ9WXFUw_1SrergnF2E4tGTinCm6DQ4gxscpC65FO-z-o1wc3CaukP7XwTvUiNo9X2HjZ8KKA2ZNoBNQtCuHWB5098Ah5WXbc_N-acfeKvD55HmwwYNYIsv31_Ns5lQVJDnCwY5mMu3vJv_sCCDt9huol2H9sEhxSz3TDrIat3EGjO7TagluXKt818MFgKX8QqgLvNGikatELmxi06jGufgw1qmX92XOIsllzL0A2TtLJbcKo"/>
+<!-- Safe Zones Overlay (subtle) -->
+<div class="absolute inset-[5%] border border-white/20 border-dashed pointer-events-none"></div>
+<div class="absolute inset-[10%] border border-white/10 border-dashed pointer-events-none"></div>
+</div>
+<!-- Player Controls -->
+<div class="h-12 bg-surface-container-low border-t border-outline-variant flex items-center justify-between px-4 rounded-b-lg">
+<div class="font-mono-label text-mono-label text-primary">00:01:24:15</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="skip_previous">skip_previous</span></button>
+<button class="w-8 h-8 flex items-center justify-center bg-primary text-on-primary rounded-full hover:bg-surface-tint transition-colors">
+<span class="material-symbols-outlined" data-icon="play_arrow" data-weight="fill">play_arrow</span>
+</button>
+<button class="text-on-surface hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="skip_next">skip_next</span></button>
+</div>
+<div class="font-mono-label text-mono-label text-outline-variant">00:05:00:00</div>
+</div>
+</div>
+<!-- AI Inspector Sidebar (Right) -->
+<div class="w-72 bg-surface border border-outline-variant rounded-lg flex flex-col shadow-sm flex-shrink-0">
+<div class="flex justify-between items-center p-2 border-b border-outline-variant bg-surface-container-low cursor-move rounded-t-lg">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="auto_awesome">auto_awesome</span> AI Assistant
+                        </span>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="drag_indicator">drag_indicator</span>
+</div>
+<div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+<!-- AI Tool Card 1 -->
+<div class="p-3 border border-outline-variant rounded-lg bg-surface-bright shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-md font-semibold text-on-surface">Auto-Captions</span>
+<div class="w-8 h-4 bg-primary-container rounded-full relative cursor-pointer">
+<div class="w-4 h-4 bg-primary rounded-full absolute right-0 shadow-sm"></div>
+</div>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-3">Generate accurate captions powered by Whisper v3.</p>
+<button class="w-full py-1.5 border border-primary text-primary font-label-sm text-label-sm rounded hover:bg-primary-container transition-colors">Regenerate</button>
+</div>
+<!-- AI Tool Card 2 -->
+<div class="p-3 border border-outline-variant rounded-lg bg-surface-bright">
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-md font-semibold text-on-surface">Smart Crop</span>
+<span class="material-symbols-outlined text-outline-variant text-sm cursor-pointer" data-icon="info">info</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-3">Automatically keep the main subject centered for vertical video formats.</p>
+<div class="flex gap-2">
+<button class="flex-1 py-1.5 bg-[linear-gradient(to_right,#0058bc,#4c4aca)] text-white font-label-sm text-label-sm rounded shadow-sm hover:opacity-90 transition-opacity">Apply 9:16</button>
+</div>
+</div>
+<!-- Color Match -->
+<div class="p-3 border border-outline-variant rounded-lg bg-surface-bright">
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-md font-semibold text-on-surface">Style Transfer</span>
+</div>
+<div class="h-24 border border-outline-variant rounded bg-surface-variant flex items-center justify-center mb-2 border-dashed cursor-pointer hover:bg-surface-container transition-colors">
+<span class="font-label-sm text-label-sm text-outline-variant text-center px-4">Drop reference image here or click to browse</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Panel: Multi-track Timeline -->
+<div class="h-[40%] bg-surface border-t border-outline-variant flex flex-col shadow-[0_-4px_12px_rgba(0,0,0,0.02)] z-10">
+<!-- Timeline Toolbar -->
+<div class="h-10 bg-surface-container-low border-b border-outline-variant flex items-center justify-between px-4">
+<div class="flex gap-1">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface rounded transition-colors" title="Undo"><span class="material-symbols-outlined text-sm" data-icon="undo">undo</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface rounded transition-colors" title="Redo"><span class="material-symbols-outlined text-sm" data-icon="redo">redo</span></button>
+<div class="w-px h-4 bg-outline-variant mx-1 self-center"></div>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface rounded transition-colors" title="Split Tool (C)"><span class="material-symbols-outlined text-sm" data-icon="content_cut">content_cut</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface rounded transition-colors" title="Delete"><span class="material-symbols-outlined text-sm" data-icon="delete">delete</span></button>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline-variant text-sm" data-icon="zoom_out">zoom_out</span>
+<div class="w-32 h-1.5 bg-surface-variant rounded-full relative">
+<div class="absolute left-1/4 w-4 h-3 bg-primary rounded shadow-sm -top-[3px] cursor-pointer"></div>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-sm" data-icon="zoom_in">zoom_in</span>
+</div>
+</div>
+<!-- Timeline Tracks Area -->
+<div class="flex-1 flex overflow-hidden relative">
+<!-- Track Headers (Left fixed column) -->
+<div class="w-32 bg-surface-container-low border-r border-outline-variant flex flex-col z-20 shadow-[2px_0_4px_rgba(0,0,0,0.02)]">
+<!-- Timecode Header Spacer -->
+<div class="h-6 border-b border-outline-variant bg-surface-container"></div>
+<!-- Track Header: Video Main -->
+<div class="h-16 border-b border-outline-variant px-2 py-1 flex flex-col justify-center">
+<div class="flex justify-between items-center mb-1">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface flex items-center gap-1"><span class="material-symbols-outlined text-[14px]" data-icon="videocam">videocam</span> V1</span>
+<div class="flex gap-1">
+<span class="material-symbols-outlined text-[12px] text-outline-variant cursor-pointer hover:text-primary" data-icon="visibility">visibility</span>
+<span class="material-symbols-outlined text-[12px] text-outline-variant cursor-pointer hover:text-primary" data-icon="lock_open">lock_open</span>
+</div>
+</div>
+</div>
+<!-- Track Header: Overlays/Text -->
+<div class="h-12 border-b border-outline-variant px-2 py-1 flex flex-col justify-center bg-surface-bright">
+<div class="flex justify-between items-center mb-1">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface flex items-center gap-1"><span class="material-symbols-outlined text-[14px]" data-icon="title">title</span> T1</span>
+<div class="flex gap-1">
+<span class="material-symbols-outlined text-[12px] text-outline-variant cursor-pointer hover:text-primary" data-icon="visibility">visibility</span>
+<span class="material-symbols-outlined text-[12px] text-outline-variant cursor-pointer hover:text-primary" data-icon="lock_open">lock_open</span>
+</div>
+</div>
+</div>
+<!-- Track Header: Audio -->
+<div class="h-16 border-b border-outline-variant px-2 py-1 flex flex-col justify-center">
+<div class="flex justify-between items-center mb-1">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface flex items-center gap-1"><span class="material-symbols-outlined text-[14px]" data-icon="mic">mic</span> A1</span>
+<div class="flex gap-1">
+<span class="material-symbols-outlined text-[12px] text-outline-variant cursor-pointer hover:text-primary" data-icon="volume_up">volume_up</span>
+<span class="material-symbols-outlined text-[12px] text-outline-variant cursor-pointer hover:text-primary" data-icon="lock_open">lock_open</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline Content Area -->
+<div class="flex-1 overflow-x-auto relative bg-surface-container-lowest">
+<!-- Timecode Ruler -->
+<div class="h-6 border-b border-outline-variant bg-surface-container sticky top-0 flex items-end text-outline-variant font-mono-label text-[10px] overflow-hidden whitespace-nowrap z-10">
+<!-- Simulated ruler marks -->
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:00:00</div>
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:00:10</div>
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:00:20</div>
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:00:30</div>
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:00:40</div>
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:00:50</div>
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:01:00</div>
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:01:10</div>
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:01:20</div>
+<div class="inline-block w-24 border-l border-outline-variant pl-1 pb-0.5 h-full">00:01:30</div>
+</div>
+<!-- Playhead Line -->
+<div class="absolute top-0 bottom-0 w-px bg-error z-30" style="left: 45%;">
+<div class="w-3 h-3 bg-error absolute -top-1.5 -left-1.5 rotate-45 transform origin-center border border-surface"></div>
+</div>
+<!-- Tracks Container -->
+<div class="relative w-[150%]"> <!-- Wider than viewport to show scrolling -->
+<!-- Video Track 1 -->
+<div class="h-16 border-b border-outline-variant/30 flex items-center relative py-1">
+<!-- Clip 1 -->
+<div class="absolute h-14 bg-primary-fixed border border-primary rounded left-[5%] w-[35%] overflow-hidden flex flex-col justify-between shadow-[0_2px_8px_rgba(0,0,0,0.05)] cursor-pointer">
+<div class="px-1 py-0.5 bg-primary/10 font-mono-label text-[10px] text-primary truncate border-b border-primary/20">Mntn_Shot_01.mp4</div>
+<div class="flex-1 opacity-50 bg-[url('https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?auto=format&amp;fit=crop&amp;w=100&amp;q=80')] bg-repeat-x bg-contain" data-alt="Timeline thumbnail strip showing mountain landscape"></div>
+</div>
+<!-- Clip 2 (Active/Selected) -->
+<div class="absolute h-14 bg-surface border-2 border-primary rounded left-[41%] w-[20%] overflow-hidden flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.1)] z-10 cursor-pointer">
+<div class="px-1 py-0.5 bg-primary text-white font-mono-label text-[10px] truncate">Compass_Broll.mov</div>
+<div class="flex-1 opacity-70 bg-[url('https://images.unsplash.com/photo-1682687221038-404670f09439?auto=format&amp;fit=crop&amp;w=100&amp;q=80')] bg-repeat-x bg-contain" data-alt="Timeline thumbnail strip showing compass"></div>
+</div>
+</div>
+<!-- Text/Overlay Track -->
+<div class="h-12 border-b border-outline-variant/30 flex items-center relative py-1 bg-surface-bright/50">
+<!-- AI Auto-Caption Block -->
+<div class="absolute h-8 border border-secondary rounded left-[42%] w-[15%] bg-secondary-fixed-dim/30 flex items-center justify-center cursor-pointer shadow-[0_0_8px_rgba(76,74,202,0.2)]">
+<span class="font-mono-label text-[10px] text-secondary-container font-semibold">AI_Caption_01</span>
+<div class="absolute -inset-px border border-secondary rounded animate-pulse opacity-50"></div>
+</div>
+</div>
+<!-- Audio Track -->
+<div class="h-16 border-b border-outline-variant/30 flex items-center relative py-1">
+<!-- Audio Clip -->
+<div class="absolute h-14 bg-surface-container border border-outline rounded left-[5%] w-[60%] overflow-hidden flex flex-col justify-between cursor-pointer">
+<div class="px-1 py-0.5 bg-surface-variant font-mono-label text-[10px] text-on-surface-variant truncate border-b border-outline-variant">Ambient_Wind_Bed.wav</div>
+<!-- Fake Waveform -->
+<div class="flex-1 flex items-end justify-center px-1 gap-0.5 opacity-50">
+<div class="w-1 bg-outline h-1/4 rounded-t"></div><div class="w-1 bg-outline h-1/2 rounded-t"></div><div class="w-1 bg-outline h-3/4 rounded-t"></div><div class="w-1 bg-outline h-full rounded-t"></div><div class="w-1 bg-outline h-2/3 rounded-t"></div><div class="w-1 bg-outline h-1/3 rounded-t"></div><div class="w-1 bg-outline h-1/2 rounded-t"></div><div class="w-1 bg-outline h-1/4 rounded-t"></div><div class="w-1 bg-outline h-full rounded-t"></div><div class="w-1 bg-outline h-3/4 rounded-t"></div><div class="w-1 bg-outline h-1/2 rounded-t"></div><div class="w-1 bg-outline h-1/4 rounded-t"></div>
+<div class="w-1 bg-outline h-1/2 rounded-t"></div><div class="w-1 bg-outline h-3/4 rounded-t"></div><div class="w-1 bg-outline h-full rounded-t"></div><div class="w-1 bg-outline h-2/3 rounded-t"></div><div class="w-1 bg-outline h-1/3 rounded-t"></div><div class="w-1 bg-outline h-1/2 rounded-t"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

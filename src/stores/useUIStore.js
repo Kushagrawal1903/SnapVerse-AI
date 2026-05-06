@@ -1,10 +1,6 @@
 import { create } from 'zustand';
 
 const useUIStore = create((set) => ({
-  // Navigation
-  currentView: 'editor', // 'editor' | 'analyze' | 'breakdown'
-  setCurrentView: (view) => set({ currentView: view }),
-
   // Selection
   selectedClipIds: new Set(),
   clipboardClips: [],

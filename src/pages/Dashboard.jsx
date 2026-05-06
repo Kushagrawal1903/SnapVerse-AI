@@ -1,0 +1,146 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../stores/useAuthStore';
+import useProjectStore from '../stores/useProjectStore';
+import { loadUserProjects, createNewProject, deleteProject, duplicateProject } from '../services/projectService';
+import DashboardTopbar from './dashboard/DashboardTopbar';
+import DashboardSidebar from './dashboard/DashboardSidebar';
+import { ProjectCard, ProjectGridSkeleton, EmptyProjectsState, NewProjectCard, TemplatesColumn } from './dashboard/DashboardCards';
+import { showToast } from '../stores/useToastStore';
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const user = useAuthStore(s => s.user);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('personal');
+  const [sortBy, setSortBy] = useState('recent');
+
+  useEffect(() => {
+    loadUserProjects()
+      .then(p => { setProjects(p); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [user]);
+
+  const handleCreateBlank = useCallback(async () => {
+    try {
+      const project = await createNewProject({ name: 'Untitled Project' });
+      if (project) {
+        useProjectStore.getState().loadProject({
+          projectId: project.id, projectName: project.name,
+          aspectRatio: project.aspect_ratio, tracks: project.timeline_state?.tracks, mediaItems: [],
+        });
+        navigate(`/editor/${project.id}`);
+      }
+    } catch (err) { 
+      console.error('Failed to create project', err); 
+      showToast(err.message || 'Failed to create project', 'error');
+    }
+  }, [navigate]);
+
+  const handleCreateFromTemplate = useCallback(async (template) => {
+    try {
+      const project = await createNewProject({ name: template.title, ...template.preset });
+      if (project) {
+        useProjectStore.getState().loadProject({
+          projectId: project.id, projectName: project.name,
+          aspectRatio: project.aspect_ratio || template.preset.aspectRatio, tracks: project.timeline_state?.tracks, mediaItems: [],
+        });
+        navigate(`/editor/${project.id}`);
+      }
+    } catch (err) { 
+      console.error('Failed to create from template', err); 
+      showToast(err.message || 'Failed to create from template', 'error');
+    }
+  }, [navigate]);
+
+  const handleOpenProject = useCallback((project) => {
+    useProjectStore.getState().loadProject({
+      projectId: project.id, projectName: project.name,
+      aspectRatio: project.aspect_ratio || '9:16', tracks: project.timeline_state?.tracks || [], mediaItems: [],
+    });
+    navigate(`/editor/${project.id}`);
+  }, [navigate]);
+
+  const handleDeleteProject = useCallback(async (id) => {
+    await deleteProject(id);
+    setProjects(prev => prev.filter(p => p.id !== id));
+  }, []);
+
+  const handleDuplicateProject = useCallback(async (id) => {
+    const dup = await duplicateProject(id);
+    if (dup) setProjects(prev => [dup, ...prev]);
+  }, []);
+
+  const filtered = projects.filter(p =>
+    !searchQuery || p.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'alphabetical') return (a.name || '').localeCompare(b.name || '');
+    if (sortBy === 'oldest') return new Date(a.updated_at) - new Date(b.updated_at);
+    return new Date(b.updated_at) - new Date(a.updated_at);
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: "'DM Sans', sans-serif" }}>
+      <DashboardTopbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} onNavigate={navigate} />
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <DashboardSidebar pathname={pathname} onNavigate={navigate} />
+        <main style={{ flex: 1, overflowY: 'auto', background: '#f8f8fa' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 32px' }}>
+            <div style={{ marginBottom: 32 }}>
+              <h1 style={{ fontSize: 26, fontWeight: 600, color: '#0d0d12', fontFamily: "'Syne', sans-serif", margin: 0 }}>Projects</h1>
+              <p style={{ fontSize: 14, color: '#8888a0', margin: '6px 0 0' }}>Manage, organize, and create new visual experiences.</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16, marginBottom: 40 }}>
+              <NewProjectCard onCreate={handleCreateBlank} />
+              <TemplatesColumn onCreateFromTemplate={handleCreateFromTemplate} />
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div style={{ display: 'flex', gap: 0, background: '#ededf0', borderRadius: 8, padding: 3 }}>
+                  {['personal', 'shared'].map(tab => (
+                    <button key={tab} onClick={() => setActiveTab(tab)}
+                      style={{
+                        padding: '6px 20px', borderRadius: 6, border: 'none', fontSize: 13,
+                        fontWeight: activeTab === tab ? 500 : 400, cursor: 'pointer', transition: 'all 0.15s',
+                        background: activeTab === tab ? 'white' : 'transparent',
+                        color: activeTab === tab ? '#0d0d12' : '#8888a0',
+                        boxShadow: activeTab === tab ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}>
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                  style={{ height: 32, padding: '0 10px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 6, fontSize: 13, background: 'white', cursor: 'pointer', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}>
+                  <option value="recent">Recent</option>
+                  <option value="alphabetical">Alphabetical</option>
+                  <option value="oldest">Oldest</option>
+                </select>
+              </div>
+
+              {loading ? (
+                <ProjectGridSkeleton count={8} />
+              ) : sorted.length === 0 ? (
+                <EmptyProjectsState onCreate={handleCreateBlank} />
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, paddingBottom: 32 }}>
+                  {sorted.map(project => (
+                    <ProjectCard key={project.id} project={project} onOpen={handleOpenProject} onDuplicate={handleDuplicateProject} onDelete={handleDeleteProject} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

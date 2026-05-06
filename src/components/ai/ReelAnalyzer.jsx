@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { analyzeReel } from '../../services/aiService';
 import useProjectStore from '../../stores/useProjectStore';
-import useUIStore from '../../stores/useUIStore';
 
 export default function ReelAnalyzer() {
   const [file, setFile] = useState(null);
@@ -116,7 +115,8 @@ export default function ReelAnalyzer() {
           duration: mediaItem.duration,
         });
       }
-      useUIStore.getState().setCurrentView('editor');
+      // Navigation to editor is handled by the page wrapper via react-router
+      window.location.href = `/editor/${useProjectStore.getState().projectId || 'new'}`;
     }
   };
 

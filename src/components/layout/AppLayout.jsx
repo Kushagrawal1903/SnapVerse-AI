@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback } from 'react';
-import TopBar from './TopBar';
 import EditorLayout from './EditorLayout';
 import TimelinePanel from '../timeline/TimelinePanel';
 import FiltersPanel from '../effects/FiltersPanel';
@@ -10,7 +9,6 @@ import SpeedCurvePanel from '../timeline/SpeedCurvePanel';
 import useUIStore from '../../stores/useUIStore';
 import useProjectStore from '../../stores/useProjectStore';
 
-const TOPBAR_HEIGHT = 44;
 const HANDLE_HEIGHT = 7;
 const MIN_TOP = 300;
 const MIN_TIMELINE = 200;
@@ -44,13 +42,12 @@ export default function AppLayout() {
 
     const onMouseMove = (e) => {
       if (!isDragging.current) return;
-      // Cancel any pending rAF to avoid stacking
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         if (!container) return;
         const rect = container.getBoundingClientRect();
-        const totalAvailable = rect.height - TOPBAR_HEIGHT - HANDLE_HEIGHT;
-        const newTopHeight = e.clientY - rect.top - TOPBAR_HEIGHT;
+        const totalAvailable = rect.height - HANDLE_HEIGHT;
+        const newTopHeight = e.clientY - rect.top;
         const clampedTop = Math.max(MIN_TOP, Math.min(newTopHeight, totalAvailable - MIN_TIMELINE));
         setTopHeight(clampedTop);
       });
@@ -71,14 +68,14 @@ export default function AppLayout() {
     document.addEventListener('mouseup', onMouseUp);
   }, []);
 
-  // Calculate heights
+  // Calculate heights — no topbar subtraction since topbar is external
   const topSectionStyle = topHeight
     ? { height: topHeight, minHeight: MIN_TOP }
-    : { height: `calc(55vh - ${TOPBAR_HEIGHT / 2}px)`, minHeight: MIN_TOP };
+    : { height: '55%', minHeight: MIN_TOP };
 
   const timelineSectionStyle = topHeight
-    ? { height: `calc(100vh - ${TOPBAR_HEIGHT}px - ${topHeight}px - ${HANDLE_HEIGHT}px)`, minHeight: MIN_TIMELINE }
-    : { height: `calc(45vh - ${TOPBAR_HEIGHT / 2}px)`, minHeight: MIN_TIMELINE };
+    ? { height: `calc(100% - ${topHeight}px - ${HANDLE_HEIGHT}px)`, minHeight: MIN_TIMELINE }
+    : { height: '45%', minHeight: MIN_TIMELINE };
 
   return (
     <div
@@ -86,13 +83,11 @@ export default function AppLayout() {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
+        flex: 1,
         overflow: 'hidden',
         background: 'var(--color-bg-secondary)',
       }}
     >
-      {/* TOP BAR */}
-      <TopBar />
 
       {/* TOP SECTION — editor panels */}
       <div
