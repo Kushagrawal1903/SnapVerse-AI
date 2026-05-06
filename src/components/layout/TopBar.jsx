@@ -5,6 +5,13 @@ import useUIStore from '../../stores/useUIStore';
 import { saveProject } from '../../services/storageService';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
+const resolveProjectThumbnail = (mediaItems = []) =>
+  mediaItems.find((m) => m?.fileUrl)?.fileUrl ||
+  mediaItems.find((m) => m?.objectUrl)?.objectUrl ||
+  mediaItems.find((m) => m?.thumbnailUrl)?.thumbnailUrl ||
+  mediaItems.find((m) => m?.thumbnail)?.thumbnail ||
+  null;
+
 export default function TopBar() {
   const projectName = useProjectStore(s => s.projectName);
   const setProjectName = useProjectStore(s => s.setProjectName);
@@ -28,10 +35,13 @@ export default function TopBar() {
 
   const handleSave = () => {
     const state = useProjectStore.getState();
+    if (!state.projectId) return;
     saveProject({
+      projectId: state.projectId,
       projectName: state.projectName,
       aspectRatio: state.aspectRatio,
       tracks: state.tracks,
+      thumbnailUrl: resolveProjectThumbnail(state.mediaItems),
       mediaItems: state.mediaItems.map(m => ({ ...m, file: undefined, objectUrl: undefined })),
     });
     useUIStore.setState({ saveStatus: 'saved' });

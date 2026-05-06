@@ -2,8 +2,25 @@ import { get, set, del, keys } from 'idb-keyval';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import useAuthStore from '../stores/useAuthStore';
 
-const PROJECT_KEY = 'snapverse_project';
+const PROJECT_PREFIX = 'snapverse_project_';
+const INDEX_KEY = 'snapverse_projects_index';
 const MEDIA_PREFIX = 'snapverse_media_';
+
+function pickProjectThumbnail(mediaItems = []) {
+  const withFileUrl = mediaItems.find((item) => item?.fileUrl);
+  if (withFileUrl?.fileUrl) return withFileUrl.fileUrl;
+
+  const withObjectUrl = mediaItems.find((item) => item?.objectUrl);
+  if (withObjectUrl?.objectUrl) return withObjectUrl.objectUrl;
+
+  const withThumbUrl = mediaItems.find((item) => item?.thumbnailUrl);
+  if (withThumbUrl?.thumbnailUrl) return withThumbUrl.thumbnailUrl;
+
+  const withThumb = mediaItems.find((item) => item?.thumbnail);
+  if (withThumb?.thumbnail) return withThumb.thumbnail;
+
+  return null;
+}
 
 // ═══════════════════════════════════════
 // IndexedDB (local persistence)
@@ -11,20 +28,47 @@ const MEDIA_PREFIX = 'snapverse_media_';
 
 export async function saveProject(projectData) {
   try {
-    await set(PROJECT_KEY, {
+    if (!projectData?.projectId) {
+      throw new Error('Cannot save project without projectId');
+    }
+    const projectId = projectData.projectId;
+    const key = `${PROJECT_PREFIX}${projectId}`;
+    
+    await set(key, {
       ...projectData,
+      projectId,
       savedAt: Date.now(),
     });
+
+    // Update local index
+    const index = await get(INDEX_KEY) || [];
+    const existingIdx = index.findIndex(p => p.id === projectId);
+    const summary = {
+      id: projectId,
+      name: projectData.projectName || 'Untitled Project',
+      aspect_ratio: projectData.aspectRatio || '9:16',
+      target_platform: projectData.targetPlatform || 'Instagram Reels',
+      thumbnail_url: projectData.thumbnailUrl || pickProjectThumbnail(projectData.mediaItems || []),
+      duration: projectData.duration || 0,
+      updated_at: new Date().toISOString()
+    };
+    if (existingIdx >= 0) {
+      index[existingIdx] = { ...index[existingIdx], ...summary };
+    } else {
+      index.push(summary);
+    }
+    await set(INDEX_KEY, index);
 
     // Also save to Supabase if authenticated
     if (isSupabaseConfigured()) {
       const user = useAuthStore.getState().user;
       if (user && user.id !== 'local') {
-        const projectId = projectData.projectId || undefined;
         const payload = {
           user_id: user.id,
           name: projectData.projectName || 'Untitled Project',
           aspect_ratio: projectData.aspectRatio || '9:16',
+          target_platform: projectData.targetPlatform || 'Instagram Reels',
+          thumbnail_url: projectData.thumbnailUrl || pickProjectThumbnail(projectData.mediaItems || []),
           timeline_state: {
             tracks: projectData.tracks || [],
             clips: [],
@@ -45,20 +89,30 @@ export async function saveProject(projectData) {
         }
       }
     }
-    return true;
+    return projectId;
   } catch (e) {
     console.error('Failed to save project:', e);
     return false;
   }
 }
 
-export async function loadProject() {
+export async function loadProject(projectId) {
   try {
-    const data = await get(PROJECT_KEY);
+    const data = await get(`${PROJECT_PREFIX}${projectId}`);
     return data || null;
   } catch (e) {
     console.error('Failed to load project:', e);
     return null;
+  }
+}
+
+export async function deleteLocalProject(projectId) {
+  try {
+    await del(`${PROJECT_PREFIX}${projectId}`);
+    const index = await get(INDEX_KEY) || [];
+    await set(INDEX_KEY, index.filter(p => p.id !== projectId));
+  } catch(e) {
+    console.error('Failed to delete local project', e);
   }
 }
 

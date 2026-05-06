@@ -1,6 +1,109 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const GEMMA_API_KEY = import.meta.env.VITE_GEMMA_API_KEY;
+// Gemma-only configuration.
+// We dynamically resolve the exact model ID using ListModels so it matches what your API key supports.
+const GEMMA_ONLY = (import.meta.env.VITE_GEMMA_ONLY ?? 'true') !== 'false';
+const PREFERRED_GEMMA_MODEL = import.meta.env.VITE_GEMMA_MODEL || 'gemma-3-27b-it';
+const GEMMA_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+
+let resolvedGemmaModel = null;
+let resolvedGemmaCandidates = null;
+
+async function resolveGemmaModelId() {
+  if (resolvedGemmaModel) return resolvedGemmaModel;
+  if (!GEMMA_API_KEY) return null;
+
+  // List models available to this API key and pick a Gemma model that supports generateContent.
+  const res = await fetch(`${GEMMA_API_BASE}/models?key=${encodeURIComponent(GEMMA_API_KEY)}`);
+  if (!res.ok) {
+    throw new Error(`Failed to list models (${res.status}). Check VITE_GEMMA_API_KEY.`);
+  }
+  const json = await res.json();
+  const models = Array.isArray(json.models) ? json.models : [];
+
+  const supportsGenerate = (m) =>
+    Array.isArray(m.supportedGenerationMethods) &&
+    m.supportedGenerationMethods.includes('generateContent');
+
+  const byName = new Map(models.map((m) => [m.name, m]));
+
+  // Most APIs return model names like "models/<id>".
+  const preferredFull = PREFERRED_GEMMA_MODEL.startsWith('models/')
+    ? PREFERRED_GEMMA_MODEL
+    : `models/${PREFERRED_GEMMA_MODEL}`;
+
+  if (byName.has(preferredFull) && supportsGenerate(byName.get(preferredFull))) {
+    resolvedGemmaModel = PREFERRED_GEMMA_MODEL;
+    return resolvedGemmaModel;
+  }
+
+  // If the preferred model isn't present, try to find a closest Gemma 3 27B instruct model.
+  const candidates = models
+    .filter(supportsGenerate)
+    .map((m) => m.name?.replace(/^models\//, ''))
+    .filter(Boolean);
+  resolvedGemmaCandidates = candidates;
+
+  const gemma3Candidates = candidates.filter((id) => id.startsWith('gemma-3') && id.includes('27b') && id.includes('it'));
+  if (gemma3Candidates.length > 0) {
+    resolvedGemmaModel = gemma3Candidates[0];
+    return resolvedGemmaModel;
+  }
+
+  const anyGemmaCandidates = candidates.filter((id) => id.startsWith('gemma-'));
+  if (anyGemmaCandidates.length > 0) {
+    resolvedGemmaModel = anyGemmaCandidates[0];
+    return resolvedGemmaModel;
+  }
+
+  throw new Error(
+    `No Gemma model with generateContent is available for this API key. ` +
+      `Run ListModels and ensure Gemma access is enabled.`
+  );
+}
+
+async function getGemmaCandidates() {
+  if (resolvedGemmaCandidates?.length) return resolvedGemmaCandidates;
+  await resolveGemmaModelId();
+  return resolvedGemmaCandidates || [];
+}
+
+function isTransientGemmaError(err) {
+  const msg = (err?.message || '').toLowerCase();
+  return (
+    msg.includes('[500') ||
+    msg.includes('internal error') ||
+    msg.includes('rate limit') ||
+    msg.includes('[503') ||
+    msg.includes('unavailable') ||
+    msg.includes('timeout') ||
+    msg.includes('temporarily')
+  );
+}
+
+async function sleep(ms) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
+async function withRetries(fn, { retries = 2, baseDelayMs = 350 } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (!isTransientGemmaError(e) || attempt === retries) break;
+      const delay = baseDelayMs * Math.pow(2, attempt);
+      await sleep(delay);
+    }
+  }
+  throw lastErr;
+}
+
+async function getModel(genAI, modelId) {
+  return genAI.getGenerativeModel({ model: modelId });
+}
 
 const SYSTEM_PROMPT = `You are "AI Director" — an expert video editor and creative director built into SnapVerse, an AI-powered reel editing app. You analyze the user's project state and provide concise, actionable coaching.
 
@@ -21,15 +124,24 @@ Keep it to 3-6 suggestions maximum. Be specific, not generic.`;
 // ═══════════════════════════════════════
 
 export async function analyzeProject(projectSnapshot) {
-  const prompt = `Analyze this reel project and return ONLY a valid JSON array of improvement cards (no markdown, no explanation):
-  
-Project: ${JSON.stringify(projectSnapshot)}
+  const prompt = `${SYSTEM_PROMPT}
 
-Return format:
+TASK:
+Analyze the following reel project JSON and return ONLY a valid JSON array of 3 to 6 improvement cards.
+
+Rules:
+- Output MUST be a JSON array (no markdown, no prose).
+- Each item MUST include: id, category, priority, title, suggestion.
+- suggestion must be 2-3 sentences and directly actionable.
+
+Project:
+${JSON.stringify(projectSnapshot)}
+
+Return format (example shape only):
 [{"id":"unique_id","category":"Pacing|Hook|Audio|Visual|Captions|Structure","priority":"high|medium|low","title":"short title","suggestion":"2-3 sentence actionable tip"}]`;
 
-  // Try Supabase Edge Function first
-  if (isSupabaseConfigured()) {
+  // Try Supabase Edge Function first (unless forced Gemma-only)
+  if (!GEMMA_ONLY && isSupabaseConfigured()) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -68,8 +180,8 @@ Return format:
 // ═══════════════════════════════════════
 
 export async function* chatStream(message, history, projectSnapshot) {
-  // Try Supabase Edge Function
-  if (isSupabaseConfigured()) {
+  // Try Supabase Edge Function (unless forced Gemma-only)
+  if (!GEMMA_ONLY && isSupabaseConfigured()) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -105,18 +217,35 @@ export async function* chatStream(message, history, projectSnapshot) {
     const contextMessage = `[Current project context: ${JSON.stringify(projectSnapshot)}]\n\nUser question: ${message}`;
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
+    const candidates = await getGemmaCandidates();
+    const preferred = await resolveGemmaModelId();
+    const ordered = [preferred, ...candidates.filter((c) => c !== preferred)].filter(Boolean);
 
-    const chatSession = model.startChat({
-      systemInstruction: SYSTEM_PROMPT,
-      history: (history || []).map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-    });
+    let lastErr = null;
+    for (const modelId of ordered) {
+      try {
+        const model = await getModel(genAI, modelId);
+        const chatSession = model.startChat({
+          systemInstruction: { role: 'system', parts: [{ text: SYSTEM_PROMPT }] },
+          history: (history || []).map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+        });
 
-    const result = await chatSession.sendMessageStream(contextMessage);
-    for await (const chunk of result.stream) {
-      yield chunk.text();
+        const result = await withRetries(
+          () => chatSession.sendMessageStream(contextMessage),
+          { retries: 2, baseDelayMs: 450 }
+        );
+
+        for await (const chunk of result.stream) {
+          yield chunk.text();
+        }
+        return;
+      } catch (e) {
+        lastErr = e;
+        if (!isTransientGemmaError(e)) break;
+      }
     }
-    return;
+
+    throw lastErr || new Error('Gemma chat failed.');
   }
 
   yield 'AI is not configured. Please set up a Gemma API key or configure Supabase Edge Functions.';
@@ -139,13 +268,87 @@ async function callGemmaDirect(prompt) {
   try {
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    return parseJsonResponse(text);
+    const candidates = await getGemmaCandidates();
+    const preferred = await resolveGemmaModelId();
+    const ordered = [preferred, ...candidates.filter((c) => c !== preferred)].filter(Boolean);
+
+    let lastErr = null;
+    for (const modelId of ordered) {
+      try {
+        const model = await getModel(genAI, modelId);
+        const result = await withRetries(
+          () =>
+            model.generateContent({
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: 'application/json' },
+            }),
+          { retries: 2, baseDelayMs: 450 }
+        );
+        const text = result.response.text();
+        const parsed = parseJsonArray(text);
+        if (parsed) return parsed;
+
+        // Repair pass: ask the model to convert its previous output into the required JSON array.
+        const repairPrompt = `Convert the following text into the required JSON array format.
+Return ONLY valid JSON array. No markdown.
+
+Required array item shape:
+{"id":"unique_id","category":"Pacing|Hook|Audio|Visual|Captions|Structure","priority":"high|medium|low","title":"short title","suggestion":"2-3 sentence actionable tip"}
+
+Text to convert:
+${text}`;
+
+        const repaired = await withRetries(
+          () =>
+            model.generateContent({
+              contents: [{ role: 'user', parts: [{ text: repairPrompt }] }],
+              generationConfig: { responseMimeType: 'application/json' },
+            }),
+          { retries: 2, baseDelayMs: 450 }
+        );
+
+        const repairedText = repaired.response.text();
+        const repairedParsed = parseJsonArray(repairedText);
+        if (repairedParsed) return repairedParsed;
+
+        return parseJsonResponse(text);
+      } catch (e) {
+        lastErr = e;
+        if (!isTransientGemmaError(e)) break;
+      }
+    }
+
+    throw lastErr || new Error('Gemma generateContent failed.');
   } catch (e) {
     console.error('Gemma direct call failed:', e);
     return [{ id: 'error', category: 'Structure', priority: 'low', title: 'Analysis Failed', suggestion: e.message }];
+  }
+}
+
+function parseJsonArray(text) {
+  try {
+    const clean = String(text || '').replace(/```json\n?|```\n?/g, '').trim();
+    const jsonMatch = clean.match(/\[[\s\S]*\]/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(clean);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseJsonObject(text) {
+  try {
+    const clean = String(text || '').replace(/```json\n?|```\n?/g, '').trim();
+    const objectMatch = clean.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+      const parsed = JSON.parse(objectMatch[0]);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+    }
+    const parsed = JSON.parse(clean);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
   }
 }
 
@@ -176,8 +379,8 @@ export async function transcribeAudio(blob) {
 
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
-  // Audio transcription using gemma-3-4b-it (note: user requested full replacement, though audio support in standard SDK might fallback)
-  const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
+  const modelId = await resolveGemmaModelId();
+  const model = genAI.getGenerativeModel({ model: modelId });
 
   // Convert blob to base64
   const base64Data = await new Promise((resolve, reject) => {
@@ -228,8 +431,8 @@ Make sure to break down the transcription into logical phrases (up to 5-7 words 
 // ═══════════════════════════════════════
 
 export async function analyzeReel(urlOrName, frames) {
-  // Call Supabase Edge Function
-  if (isSupabaseConfigured()) {
+  // Call Supabase Edge Function (unless forced Gemma-only)
+  if (!GEMMA_ONLY && isSupabaseConfigured()) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -260,7 +463,9 @@ export async function analyzeReel(urlOrName, frames) {
   if (GEMMA_API_KEY) {
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
+    const candidates = await getGemmaCandidates();
+    const preferred = await resolveGemmaModelId();
+    const ordered = [preferred, ...candidates.filter((c) => c !== preferred)].filter(Boolean);
     
     const parts = [
       { text: `Analyze this short-form video reel (Title/URL: ${urlOrName}) and score it across these 6 dimensions.
@@ -294,23 +499,54 @@ Return ONLY valid JSON:
       }
     }
 
-    try {
-      const result = await model.generateContent(parts);
-      const text = result.response.text();
-      const clean = text.replace(/```json\n?|```\n?/g, '').trim();
-      return JSON.parse(clean);
-    } catch (e) {
-      console.error('Gemma direct call failed:', e);
-      throw new Error('Failed to analyze reel locally: ' + e.message);
+    let lastErr = null;
+    for (const modelId of ordered) {
+      try {
+        const model = await getModel(genAI, modelId);
+        const result = await withRetries(
+          () =>
+            model.generateContent({
+              contents: [{ role: 'user', parts }],
+              generationConfig: { responseMimeType: 'application/json' },
+            }),
+          { retries: 2, baseDelayMs: 450 }
+        );
+        const text = result.response.text();
+        const parsed = parseJsonObject(text);
+        if (parsed) return parsed;
+
+        const repairPrompt = `Convert this output into VALID JSON object only (no markdown, no prose).
+Required keys:
+overallScore, scores, viralPrediction, topFix, hook3SecondAnalysis, bestMoment.
+
+Original output:
+${text}`;
+
+        const repaired = await withRetries(
+          () =>
+            model.generateContent({
+              contents: [{ role: 'user', parts: [{ text: repairPrompt }] }],
+              generationConfig: { responseMimeType: 'application/json' },
+            }),
+          { retries: 2, baseDelayMs: 450 }
+        );
+        const repairedParsed = parseJsonObject(repaired.response.text());
+        if (repairedParsed) return repairedParsed;
+      } catch (e) {
+        lastErr = e;
+        if (!isTransientGemmaError(e)) break;
+      }
     }
+    console.error('Gemma direct call failed:', lastErr);
+    throw new Error('Failed to analyze reel locally: ' + (lastErr?.message || 'Unknown error'));
   }
 
   throw new Error("AI is not configured. Please set up a Gemma API key or configure Supabase to use this feature.");
 }
 
 export async function getViralBreakdown(url) {
-  // Call Supabase Edge Function
-  if (isSupabaseConfigured()) {
+  // Call Supabase Edge Function (unless forced Gemma-only)
+  if (!GEMMA_ONLY && isSupabaseConfigured()) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -341,7 +577,9 @@ export async function getViralBreakdown(url) {
   if (GEMMA_API_KEY) {
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(GEMMA_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
+    const candidates = await getGemmaCandidates();
+    const preferred = await resolveGemmaModelId();
+    const ordered = [preferred, ...candidates.filter((c) => c !== preferred)].filter(Boolean);
 
     let metadata = '';
     try {
@@ -373,15 +611,46 @@ Return JSON ONLY:
 "templateSteps": string[]
 }`;
 
-    try {
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-      const clean = text.replace(/```json\n?|```\n?/g, '').trim();
-      return JSON.parse(clean);
-    } catch (e) {
-      console.error('Gemma direct call failed:', e);
-      throw new Error('Failed to get viral breakdown locally: ' + e.message);
+    let lastErr = null;
+    for (const modelId of ordered) {
+      try {
+        const model = await getModel(genAI, modelId);
+        const result = await withRetries(
+          () =>
+            model.generateContent({
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: 'application/json' },
+            }),
+          { retries: 2, baseDelayMs: 450 }
+        );
+        const text = result.response.text();
+        const parsed = parseJsonObject(text);
+        if (parsed) return parsed;
+
+        const repairPrompt = `Convert this output into VALID JSON object only (no markdown, no prose).
+Required keys:
+hookType, hookTiming, cutRhythm, averageClipLength, audioAnalysis, emotionalArc, textStrategy, whatToSteal, templateSteps.
+
+Original output:
+${text}`;
+
+        const repaired = await withRetries(
+          () =>
+            model.generateContent({
+              contents: [{ role: 'user', parts: [{ text: repairPrompt }] }],
+              generationConfig: { responseMimeType: 'application/json' },
+            }),
+          { retries: 2, baseDelayMs: 450 }
+        );
+        const repairedParsed = parseJsonObject(repaired.response.text());
+        if (repairedParsed) return repairedParsed;
+      } catch (e) {
+        lastErr = e;
+        if (!isTransientGemmaError(e)) break;
+      }
     }
+    console.error('Gemma direct call failed:', lastErr);
+    throw new Error('Failed to get viral breakdown locally: ' + (lastErr?.message || 'Unknown error'));
   }
 
   throw new Error("AI is not configured. Please set up a Gemma API key or configure Supabase to use this feature.");

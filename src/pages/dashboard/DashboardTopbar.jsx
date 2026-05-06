@@ -25,13 +25,13 @@ export default function DashboardTopbar({ searchQuery, setSearchQuery, onNavigat
       <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
         onClick={() => onNavigate('/')}>
         <span style={{ color: '#0d0d12' }}>Snap</span>
-        <span style={{ color: '#5b4ff5' }}>Verse</span>
+        <span style={{ color: '#3b82f6' }}>Verse</span>
       </div>
 
       <div style={{ flex: 1, maxWidth: 480, position: 'relative' }}>
         <input type="text" placeholder="Search projects..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
           style={{ width: '100%', height: 36, padding: '0 12px 0 36px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, fontSize: 14, background: '#f5f5f7', outline: 'none', transition: 'border-color 0.15s, background 0.15s', fontFamily: "'DM Sans', sans-serif" }}
-          onFocus={e => { e.target.style.background = '#fff'; e.target.style.borderColor = '#5b4ff5'; }}
+          onFocus={e => { e.target.style.background = '#fff'; e.target.style.borderColor = '#3b82f6'; }}
           onBlur={e => { e.target.style.background = '#f5f5f7'; e.target.style.borderColor = 'rgba(0,0,0,0.12)'; }}
         />
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9999b0" strokeWidth="2"
@@ -42,15 +42,11 @@ export default function DashboardTopbar({ searchQuery, setSearchQuery, onNavigat
 
       <div style={{ flex: 1 }} />
 
-      <button style={{ height: 34, padding: '0 16px', borderRadius: 8, border: '1.5px solid #5b4ff5', background: 'transparent', color: '#5b4ff5', fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s', fontFamily: "'DM Sans', sans-serif" }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#5b4ff5'; e.currentTarget.style.color = 'white'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#5b4ff5'; }}>
-        ✦ Upgrade
-      </button>
+
 
       <div style={{ position: 'relative' }} ref={menuRef}>
         <button onClick={() => setShowUserMenu(!showUserMenu)}
-          style={{ width: 34, height: 34, borderRadius: '50%', border: 'none', background: '#5b4ff5', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          style={{ width: 34, height: 34, borderRadius: '50%', border: 'none', background: '#3b82f6', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {user?.email?.[0]?.toUpperCase() ?? 'U'}
         </button>
         {showUserMenu && (

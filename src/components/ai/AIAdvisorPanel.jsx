@@ -1,33 +1,22 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import useAIStore from '../../stores/useAIStore';
 import useProjectStore from '../../stores/useProjectStore';
 import useUIStore from '../../stores/useUIStore';
-import { analyzeProject, chatStream, isAIAvailable } from '../../services/aiService';
+import { analyzeProject, isAIAvailable } from '../../services/aiService';
 
 export default function AIAdvisorPanel() {
-  const messages = useAIStore(s => s.messages);
   const suggestions = useAIStore(s => s.suggestions);
   const isAnalyzing = useAIStore(s => s.isAnalyzing);
-  const isStreaming = useAIStore(s => s.isStreaming);
-  const addMessage = useAIStore(s => s.addMessage);
-  const updateLastMessage = useAIStore(s => s.updateLastMessage);
   const setSuggestions = useAIStore(s => s.setSuggestions);
   const setIsAnalyzing = useAIStore(s => s.setIsAnalyzing);
-  const setIsStreaming = useAIStore(s => s.setIsStreaming);
   const lastAnalyzedAt = useAIStore(s => s.lastAnalyzedAt);
   const setLastAnalyzedAt = useAIStore(s => s.setLastAnalyzedAt);
 
-  const [input, setInput] = useState('');
-  const messagesEndRef = useRef(null);
   const analyzeTimeoutRef = useRef(null);
   const aiAvailable = isAIAvailable();
 
   const tracks = useProjectStore(s => s.tracks);
   const clipCount = tracks.reduce((sum, t) => sum + t.clips.length, 0);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, suggestions]);
 
   // Auto-analyze when clips change (debounced 3 seconds)
   useEffect(() => {
@@ -53,36 +42,16 @@ export default function AIAdvisorPanel() {
       setSuggestions(results);
       setLastAnalyzedAt(Date.now());
     } catch (err) {
-      addMessage({ role: 'system', content: `Analysis failed: ${err.message}` });
+      setSuggestions([{
+        id: 'analysis-error',
+        category: 'Structure',
+        priority: 'low',
+        title: 'Analysis failed',
+        suggestion: err?.message || 'Unknown error',
+      }]);
     }
     setIsAnalyzing(false);
-  }, [aiAvailable, setIsAnalyzing, setSuggestions, addMessage, setLastAnalyzedAt]);
-
-  const handleSend = useCallback(async () => {
-    if (!input.trim() || !aiAvailable || isStreaming) return;
-    const msg = input.trim();
-    setInput('');
-    addMessage({ role: 'user', content: msg });
-    addMessage({ role: 'assistant', content: '' });
-    setIsStreaming(true);
-
-    try {
-      const snapshot = useProjectStore.getState().getProjectSnapshot();
-      const history = useAIStore.getState().messages
-        .filter(m => m.role === 'user' || m.role === 'assistant')
-        .slice(-10)
-        .map(m => ({ role: m.role, content: m.content }));
-
-      let fullResponse = '';
-      for await (const chunk of chatStream(msg, history, snapshot)) {
-        fullResponse += chunk;
-        updateLastMessage(fullResponse);
-      }
-    } catch (err) {
-      updateLastMessage(`Error: ${err.message}`);
-    }
-    setIsStreaming(false);
-  }, [input, aiAvailable, isStreaming, addMessage, updateLastMessage, setIsStreaming]);
+  }, [aiAvailable, setIsAnalyzing, setSuggestions, setLastAnalyzedAt]);
 
   // Handle "Show me" navigation for suggestions
   const handleShowMe = useCallback((suggestion) => {
@@ -212,27 +181,8 @@ export default function AIAdvisorPanel() {
           </div>
         )}
 
-        {/* Chat messages */}
-        {messages.map((m, i) => (
-          <div key={m.id || i} style={{
-            padding: '8px 14px',
-            fontSize: 12,
-            lineHeight: 1.6,
-            color: m.role === 'system' ? 'var(--color-text-muted)' : m.role === 'user' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-            fontStyle: m.role === 'system' ? 'italic' : 'normal',
-          }}>
-            {m.role === 'user' && <span style={{ fontWeight: 600, color: 'var(--color-accent-primary)' }}>You: </span>}
-            {m.role === 'assistant' && <span style={{ fontWeight: 600, color: 'var(--color-accent-secondary)' }}>AI: </span>}
-            <span style={{ whiteSpace: 'pre-wrap' }}>{m.content}</span>
-            {m.role === 'assistant' && isStreaming && i === messages.length - 1 && (
-              <span style={{ display: 'inline-block', width: 6, height: 14, background: 'var(--color-accent-secondary)', marginLeft: 2, animation: 'pulse-dot 0.8s infinite', verticalAlign: 'middle' }} />
-            )}
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-
         {/* Empty state */}
-        {suggestions.length === 0 && messages.length === 0 && !isAnalyzing && (
+        {suggestions.length === 0 && !isAnalyzing && (
           <div style={{ padding: '32px 20px', textAlign: 'center' }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>✦</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 4 }}>
@@ -249,31 +199,9 @@ export default function AIAdvisorPanel() {
         {/* Powered by badge */}
         <div style={{ padding: '12px', textAlign: 'center' }}>
           <span style={{ fontSize: 9, color: 'var(--color-text-muted)', letterSpacing: 0.5 }}>
-            Powered by Gemma 3 27B ✦
+            Powered by Gemma ✦
           </span>
         </div>
-      </div>
-
-      {/* Chat input */}
-      <div className="ai-chat-input">
-        <input
-          type="text"
-          className="input-field"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={aiAvailable ? 'Ask the AI Director...' : 'AI not configured'}
-          disabled={!aiAvailable || isStreaming}
-          style={{ fontSize: 12, height: 34 }}
-          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-        />
-        <button
-          className="btn-ai"
-          onClick={handleSend}
-          disabled={!aiAvailable || isStreaming || !input.trim()}
-          style={{ padding: '4px 14px', fontSize: 12, flexShrink: 0, opacity: (!aiAvailable || isStreaming || !input.trim()) ? 0.5 : 1 }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
       </div>
     </div>
   );

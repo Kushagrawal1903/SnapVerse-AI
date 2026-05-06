@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import useAuthStore from '../stores/useAuthStore';
 import { TRACK_CONFIG } from '../utils/constants';
+import { saveProject, loadProject as loadLocalProject } from './storageService';
 
 function defaultTracks() {
   return TRACK_CONFIG.map(t => ({
@@ -10,9 +11,17 @@ function defaultTracks() {
 }
 
 export async function loadUserProjects() {
-  if (!isSupabaseConfigured()) return [];
+  if (!isSupabaseConfigured()) {
+    const { get } = await import('idb-keyval');
+    const index = await get('snapverse_projects_index') || [];
+    return index.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+  }
   const user = useAuthStore.getState().user;
-  if (!user || user.id === 'local') return [];
+  if (!user || user.id === 'local') {
+    const { get } = await import('idb-keyval');
+    const index = await get('snapverse_projects_index') || [];
+    return index.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+  }
 
   const { data, error } = await supabase
     .from('projects')
@@ -25,8 +34,8 @@ export async function loadUserProjects() {
 }
 
 export async function createNewProject(opts = {}) {
-  if (!isSupabaseConfigured()) {
-    // Local mode — return a simple object with a random ID
+  const localFallback = () => {
+    const now = new Date().toISOString();
     return {
       id: crypto.randomUUID(),
       name: opts.name || 'Untitled Project',
@@ -34,13 +43,33 @@ export async function createNewProject(opts = {}) {
       target_platform: opts.targetPlatform || 'Instagram Reels',
       timeline_state: { tracks: defaultTracks(), clips: [] },
       duration: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     };
+  };
+
+  const persistLocalProject = async (project) => {
+    await saveProject({
+      projectId: project.id,
+      projectName: project.name,
+      aspectRatio: project.aspect_ratio,
+      tracks: project.timeline_state?.tracks || defaultTracks(),
+      mediaItems: [],
+      duration: project.duration || 0,
+      targetPlatform: project.target_platform,
+    });
+    return project;
+  };
+
+  if (!isSupabaseConfigured()) {
+    const project = localFallback();
+    return persistLocalProject(project);
   }
 
   const user = useAuthStore.getState().user;
-  if (!user || user.id === 'local') return null;
+  if (!user || user.id === 'local') {
+    return persistLocalProject(localFallback());
+  }
 
   try {
     const { data, error } = await supabase
@@ -62,20 +91,56 @@ export async function createNewProject(opts = {}) {
     return data;
   } catch (err) {
     console.warn('Supabase insert failed, falling back to local project:', err);
-    return {
-      id: crypto.randomUUID(),
-      name: opts.name || 'Untitled Project',
-      aspect_ratio: opts.aspectRatio || '9:16',
-      target_platform: opts.targetPlatform || 'Instagram Reels',
-      timeline_state: { tracks: defaultTracks(), clips: [] },
-      duration: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+    return persistLocalProject(localFallback());
   }
 }
 
+export async function getProjectById(projectId) {
+  if (!projectId) return null;
+
+  const local = await loadLocalProject(projectId);
+  if (local) {
+    return {
+      id: local.projectId,
+      name: local.projectName || 'Untitled Project',
+      aspect_ratio: local.aspectRatio || '9:16',
+      target_platform: local.targetPlatform || 'Instagram Reels',
+      thumbnail_url: local.thumbnailUrl || null,
+      timeline_state: { tracks: local.tracks || defaultTracks(), clips: [] },
+      duration: local.duration || 0,
+      updated_at: local.savedAt ? new Date(local.savedAt).toISOString() : new Date().toISOString(),
+      media_items: local.mediaItems || [],
+    };
+  }
+
+  if (!isSupabaseConfigured()) return null;
+
+  const user = useAuthStore.getState().user;
+  if (!user || user.id === 'local') return null;
+
+  const { data: project, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single();
+
+  if (error || !project) return null;
+
+  const { data: mediaItems } = await supabase
+    .from('media_items')
+    .select('*')
+    .eq('project_id', project.id);
+
+  return {
+    ...project,
+    media_items: mediaItems || [],
+  };
+}
+
 export async function deleteProject(projectId) {
+  const { deleteLocalProject } = await import('./storageService');
+  await deleteLocalProject(projectId);
+  
   if (!isSupabaseConfigured()) return;
   await supabase.from('projects').delete().eq('id', projectId);
 }

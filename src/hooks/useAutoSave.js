@@ -4,6 +4,12 @@ import useUIStore from '../stores/useUIStore';
 import { saveProject } from '../services/storageService';
 
 const AUTO_SAVE_DELAY = 10000; // 10 seconds of changes
+const resolveProjectThumbnail = (mediaItems = []) =>
+  mediaItems.find((m) => m?.fileUrl)?.fileUrl ||
+  mediaItems.find((m) => m?.objectUrl)?.objectUrl ||
+  mediaItems.find((m) => m?.thumbnailUrl)?.thumbnailUrl ||
+  mediaItems.find((m) => m?.thumbnail)?.thumbnail ||
+  null;
 
 export default function useAutoSave() {
   const tracks = useProjectStore(s => s.tracks);
@@ -28,10 +34,13 @@ export default function useAutoSave() {
           useUIStore.setState({ saveStatus: 'saving' });
           
           const state = useProjectStore.getState();
+          if (!state.projectId) return;
           await saveProject({
+            projectId: state.projectId,
             projectName: state.projectName,
             aspectRatio: state.aspectRatio,
             tracks: state.tracks,
+            thumbnailUrl: resolveProjectThumbnail(state.mediaItems),
             mediaItems: state.mediaItems.map(m => ({ ...m, file: undefined, objectUrl: undefined })),
           });
 
@@ -62,11 +71,13 @@ export default function useAutoSave() {
   useEffect(() => {
     return () => {
       const state = useProjectStore.getState();
-      if (state.saveState === 'unsaved') {
+      if (state.saveState === 'unsaved' && state.projectId) {
         saveProject({
+          projectId: state.projectId,
           projectName: state.projectName,
           aspectRatio: state.aspectRatio,
           tracks: state.tracks,
+          thumbnailUrl: resolveProjectThumbnail(state.mediaItems),
           mediaItems: state.mediaItems.map(m => ({ ...m, file: undefined, objectUrl: undefined })),
         }).catch(console.error);
       }

@@ -2,10 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useProjectStore from '../stores/useProjectStore';
 import useUIStore from '../stores/useUIStore';
-import useAuthStore from '../stores/useAuthStore';
 import AppLayout from '../components/layout/AppLayout';
 import { saveProject } from '../services/storageService';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { getProjectById } from '../services/projectService';
+
+const resolveProjectThumbnail = (mediaItems = []) =>
+  mediaItems.find((m) => m?.fileUrl)?.fileUrl ||
+  mediaItems.find((m) => m?.objectUrl)?.objectUrl ||
+  mediaItems.find((m) => m?.thumbnailUrl)?.thumbnailUrl ||
+  mediaItems.find((m) => m?.thumbnail)?.thumbnail ||
+  null;
 
 function SaveIndicator() {
   const saveStatus = useUIStore(s => s.saveStatus);
@@ -16,7 +22,7 @@ function SaveIndicator() {
   const status = saveStatus === 'saving' ? 'saving' : saveStatus === 'saved' ? 'saved' : saveState === 'unsaved' ? 'unsaved' : 'saved';
   const getRelativeTime = () => { if (!lastSavedTime) return ''; const d = Math.floor((Date.now() - lastSavedTime) / 1000); if (d < 5) return 'just now'; if (d < 60) return `${d}s ago`; if (d < 3600) return `${Math.floor(d / 60)}m ago`; return `${Math.floor(d / 3600)}h ago`; };
   const cfgs = {
-    saving: { color: '#5b4ff5', text: 'Saving...' },
+    saving: { color: '#3b82f6', text: 'Saving...' },
     saved: { color: '#1D9E75', text: `Saved ${getRelativeTime()}`.trim() },
     unsaved: { color: '#EF9F27', text: 'Unsaved' },
   };
@@ -41,37 +47,56 @@ export default function EditorPage() {
   const setProjectName = useProjectStore(s => s.setProjectName);
   const setShowShortcutsModal = useUIStore(s => s.setShowShortcutsModal);
   const setShowExportModal = useUIStore(s => s.setShowExportModal);
-  const user = useAuthStore(s => s.user);
 
   useEffect(() => {
     if (!projectId) { navigate('/'); return; }
     const loadProj = async () => {
       const state = useProjectStore.getState();
       if (state.projectId === projectId) { setLoading(false); return; }
-      if (isSupabaseConfigured() && user?.id !== 'local') {
-        try {
-          const { data: project } = await supabase.from('projects').select('*').eq('id', projectId).single();
-          if (project) {
-            const ts = project.timeline_state || {};
-            useProjectStore.getState().loadProject({ projectId: project.id, projectName: project.name, aspectRatio: project.aspect_ratio, tracks: ts.tracks, mediaItems: [] });
-            const { data: mediaItems } = await supabase.from('media_items').select('*').eq('project_id', project.id);
-            if (mediaItems?.length) {
-              mediaItems.forEach(m => {
-                useProjectStore.getState().addMedia({ id: m.id, name: m.file_name, type: m.file_type, objectUrl: m.file_url, thumbnail: m.thumbnail_url, duration: m.duration, waveform: m.waveform_data, fileUrl: m.file_url, size: m.file_size });
-              });
-            }
-            useProjectStore.getState().pushHistory();
-          }
-        } catch (err) { console.warn('Failed to load project:', err); }
+
+      try {
+        const project = await getProjectById(projectId);
+        if (project) {
+          const ts = project.timeline_state || {};
+          const mediaItems = (project.media_items || []).map(m => ({
+            id: m.id,
+            name: m.file_name || m.name,
+            type: m.file_type || m.type,
+            objectUrl: m.file_url || m.objectUrl,
+            thumbnail: m.thumbnail_url || m.thumbnail,
+            duration: m.duration,
+            waveform: m.waveform_data || m.waveform,
+            fileUrl: m.file_url || m.fileUrl,
+            size: m.file_size || m.size,
+          }));
+
+          useProjectStore.getState().loadProject({
+            projectId: project.id,
+            projectName: project.name,
+            aspectRatio: project.aspect_ratio,
+            tracks: ts.tracks,
+            mediaItems,
+          });
+          useProjectStore.getState().pushHistory();
+        }
+      } catch (err) {
+        console.warn('Failed to load project:', err);
       }
       setLoading(false);
     };
     loadProj();
-  }, [projectId, user, navigate]);
+  }, [projectId, navigate]);
 
   const handleSave = () => {
     const state = useProjectStore.getState();
-    saveProject({ projectId: state.projectId, projectName: state.projectName, aspectRatio: state.aspectRatio, tracks: state.tracks, mediaItems: state.mediaItems.map(m => ({ ...m, file: undefined, objectUrl: undefined })) });
+    saveProject({
+      projectId: state.projectId,
+      projectName: state.projectName,
+      aspectRatio: state.aspectRatio,
+      tracks: state.tracks,
+      thumbnailUrl: resolveProjectThumbnail(state.mediaItems),
+      mediaItems: state.mediaItems.map(m => ({ ...m, file: undefined, objectUrl: undefined })),
+    });
     useUIStore.setState({ saveStatus: 'saved', lastSavedTime: Date.now() });
     setTimeout(() => useUIStore.setState({ saveStatus: 'idle' }), 2000);
   };
@@ -80,10 +105,10 @@ export default function EditorPage() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 16, background: '#f8f8fa' }}>
         <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 700 }}>
-          <span style={{ color: '#0d0d12' }}>Snap</span><span style={{ color: '#5b4ff5' }}>Verse</span>
+          <span style={{ color: '#0d0d12' }}>Snap</span><span style={{ color: '#3b82f6' }}>Verse</span>
         </div>
         <div style={{ width: 200, height: 3, background: '#ededf0', borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ height: '100%', background: '#5b4ff5', borderRadius: 99, animation: 'loading-bar 1.5s ease-in-out infinite' }} />
+          <div style={{ height: '100%', background: '#3b82f6', borderRadius: 99, animation: 'loading-bar 1.5s ease-in-out infinite' }} />
         </div>
         <p style={{ fontSize: 13, color: '#9999b0' }}>Loading project...</p>
       </div>
@@ -103,7 +128,7 @@ export default function EditorPage() {
         <div style={{ width: 1, height: 16, background: 'rgba(0,0,0,0.1)' }} />
 
         <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
-          <span style={{ color: '#0d0d12' }}>Snap</span><span style={{ color: '#5b4ff5' }}>Verse</span>
+          <span style={{ color: '#0d0d12' }}>Snap</span><span style={{ color: '#3b82f6' }}>Verse</span>
         </div>
 
         <div style={{ width: 1, height: 16, background: 'rgba(0,0,0,0.1)' }} />
@@ -125,7 +150,7 @@ export default function EditorPage() {
             const active = tab.match === '/editor';
             return (
               <button key={tab.label} onClick={() => navigate(tab.path)}
-                style={{ padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: active ? 500 : 400, background: active ? '#5b4ff5' : 'transparent', color: active ? 'white' : '#8888a0', transition: 'all 0.15s', fontFamily: "'DM Sans', sans-serif" }}>
+                style={{ padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: active ? 500 : 400, background: active ? '#3b82f6' : 'transparent', color: active ? 'white' : '#8888a0', transition: 'all 0.15s', fontFamily: "'DM Sans', sans-serif" }}>
                 {tab.label}
               </button>
             );

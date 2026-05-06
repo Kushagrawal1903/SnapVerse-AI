@@ -15,12 +15,17 @@ CREATE TABLE IF NOT EXISTS projects (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL DEFAULT 'Untitled Project',
   aspect_ratio TEXT NOT NULL DEFAULT '9:16',
+  target_platform TEXT NOT NULL DEFAULT 'Instagram Reels',
   timeline_state JSONB DEFAULT '{}',
   duration FLOAT DEFAULT 0,
   thumbnail_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Backfill for existing databases created before target_platform was added
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS target_platform TEXT NOT NULL DEFAULT 'Instagram Reels';
 
 -- RLS policies
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import EditorLayout from './EditorLayout';
+import RightPanel from './RightPanel';
 import TimelinePanel from '../timeline/TimelinePanel';
 import FiltersPanel from '../effects/FiltersPanel';
 import AdjustmentsPanel from '../effects/AdjustmentsPanel';
@@ -15,7 +16,7 @@ const MIN_TIMELINE = 200;
 
 export default function AppLayout() {
   const [topHeight, setTopHeight] = useState(null); // null = use CSS default
-  const containerRef = useRef(null);
+  const mainColumnRef = useRef(null);
   const isDragging = useRef(false);
   const rafRef = useRef(null);
 
@@ -37,7 +38,7 @@ export default function AppLayout() {
     e.preventDefault();
     isDragging.current = true;
 
-    const container = containerRef.current;
+    const container = mainColumnRef.current;
     if (!container) return;
 
     const onMouseMove = (e) => {
@@ -79,55 +80,77 @@ export default function AppLayout() {
 
   return (
     <div
-      ref={containerRef}
+      className="snapverse-editor"
       style={{
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'row',
         flex: 1,
         overflow: 'hidden',
         background: 'var(--color-bg-secondary)',
       }}
     >
-
-      {/* TOP SECTION — editor panels */}
+      {/* MAIN COLUMN (editor + timeline) */}
       <div
-        style={{
-          ...topSectionStyle,
-          display: 'flex',
-          overflow: 'hidden',
-          flexShrink: 0,
-          position: 'relative',
-        }}
+        ref={mainColumnRef}
+        style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden' }}
       >
-        <EditorLayout />
+        {/* TOP SECTION — editor panels */}
+        <div
+          style={{
+            ...topSectionStyle,
+            display: 'flex',
+            overflow: 'hidden',
+            flexShrink: 0,
+            position: 'relative',
+          }}
+        >
+          <EditorLayout />
 
-        {/* Floating panels */}
-        {showFilters && <FiltersPanel />}
-        {showAdjustments && <AdjustmentsPanel />}
-        {selectedClip?.type === 'text' && <TextEditor />}
-        {selectedClip?.type === 'audio' && <AudioControls />}
-        <SpeedCurvePanel />
-      </div>
+          {/* Floating panels */}
+          {showFilters && <FiltersPanel />}
+          {showAdjustments && <AdjustmentsPanel />}
+          {selectedClip?.type === 'text' && <TextEditor />}
+          {selectedClip?.type === 'audio' && <AudioControls />}
+          <SpeedCurvePanel />
+        </div>
 
-      {/* DRAG HANDLE */}
-      <div
-        onMouseDown={handleVerticalDragStart}
-        className="layout-drag-handle"
-      >
-        <div className="layout-drag-handle-dots">
-          <span /><span /><span />
+        {/* DRAG HANDLE */}
+        <div
+          onMouseDown={handleVerticalDragStart}
+          className="layout-drag-handle"
+        >
+          <div className="layout-drag-handle-dots">
+            <span /><span /><span />
+          </div>
+        </div>
+
+        {/* TIMELINE SECTION */}
+        <div
+          style={{
+            ...timelineSectionStyle,
+            overflow: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          <TimelinePanel />
         </div>
       </div>
 
-      {/* TIMELINE SECTION */}
+      {/* FULL-HEIGHT RIGHT PANEL (AI Director / Properties) */}
       <div
         style={{
-          ...timelineSectionStyle,
-          overflow: 'hidden',
+          width: 320,
+          minWidth: 260,
+          maxWidth: 420,
           flexShrink: 0,
+          background: 'var(--color-ai-bg)',
+          borderLeft: '1px solid var(--color-ai-border)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        <TimelinePanel />
+        <RightPanel />
       </div>
     </div>
   );
